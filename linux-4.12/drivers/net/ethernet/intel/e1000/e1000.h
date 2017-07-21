@@ -1,32 +1,3 @@
-/*******************************************************************************
-
-  Intel PRO/1000 Linux driver
-  Copyright(c) 1999 - 2006 Intel Corporation.
-
-  This program is free software; you can redistribute it and/or modify it
-  under the terms and conditions of the GNU General Public License,
-  version 2, as published by the Free Software Foundation.
-
-  This program is distributed in the hope it will be useful, but WITHOUT
-  ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-  FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-  more details.
-
-  You should have received a copy of the GNU General Public License along with
-  this program; if not, write to the Free Software Foundation, Inc.,
-  51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
-
-  The full GNU General Public License is included in this distribution in
-  the file called "COPYING".
-
-  Contact Information:
-  Linux NICS <linux.nics@intel.com>
-  e1000-devel Mailing List <e1000-devel@lists.sourceforge.net>
-  Intel Corporation, 5200 N.E. Elam Young Parkway, Hillsboro, OR 97124-6497
-
-*******************************************************************************/
-
-
 /* Linux PRO/1000 Ethernet Driver main header file */
 
 #ifndef _E1000_H_
@@ -252,7 +223,7 @@ struct e1000_adapter {
 	u8 fc_autoneg;
 
 	/* TX */
-	struct e1000_tx_ring *tx_ring;      /* One per active queue */
+	struct e1000_tx_ring *tx_ring; /* One per active queue */
 	unsigned int restart_queue;
 	u32 txd_cmd;
 	u32 tx_int_delay;
@@ -265,20 +236,16 @@ struct e1000_adapter {
 	u32 tx_fifo_head;
 	u32 tx_head_addr;
 	u32 tx_fifo_size;
-	u8  tx_timeout_factor;
+	u8 tx_timeout_factor;
 	atomic_t tx_fifo_stall;
 	bool pcix_82544;
 	bool detect_tx_hung;
 	bool dump_buffers;
 
 	/* RX */
-	bool (*clean_rx)(struct e1000_adapter *adapter,
-			 struct e1000_rx_ring *rx_ring,
-			 int *work_done, int work_to_do);
-	void (*alloc_rx_buf)(struct e1000_adapter *adapter,
-			     struct e1000_rx_ring *rx_ring,
-			     int cleaned_count);
-	struct e1000_rx_ring *rx_ring;      /* One per active queue */
+	bool (*clean_rx)(struct e1000_adapter *adapter, struct e1000_rx_ring *rx_ring, int *work_done, int work_to_do);
+	void (*alloc_rx_buf)(struct e1000_adapter *adapter, struct e1000_rx_ring *rx_ring, int cleaned_count);
+	struct e1000_rx_ring *rx_ring; /* One per active queue */
 	struct napi_struct napi;
 
 	int num_tx_queues;
@@ -311,7 +278,7 @@ struct e1000_adapter {
 
 	/* to not mess up cache alignment, always add to the bottom */
 	bool tso_force;
-	bool smart_power_down;	/* phy smart power down */
+	bool smart_power_down; /* phy smart power down */
 	bool quad_port_a;
 	unsigned long flags;
 	u32 eeprom_wol;
@@ -329,9 +296,7 @@ struct e1000_adapter {
 };
 
 enum e1000_state_t {
-	__E1000_TESTING,
-	__E1000_RESETTING,
-	__E1000_DOWN
+	__E1000_TESTING, __E1000_RESETTING, __E1000_DOWN
 };
 
 #undef pr_fmt
@@ -355,25 +320,91 @@ struct net_device *e1000_get_hw_dev(struct e1000_hw *hw);
 #define e_dev_err(format, arg...) \
 	dev_err(&adapter->pdev->dev, format, ## arg)
 
-extern char e1000_driver_name[];
-extern const char e1000_driver_version[];
+#define COPYBREAK_DEFAULT 256
+#define DRV_VERSION "7.3.21-k8-NAPI"
+#define DRV_NAME "e1000"
 
-int e1000_open(struct net_device *netdev);
-int e1000_close(struct net_device *netdev);
-int e1000_up(struct e1000_adapter *adapter);
-void e1000_down(struct e1000_adapter *adapter);
-void e1000_reinit_locked(struct e1000_adapter *adapter);
-void e1000_reset(struct e1000_adapter *adapter);
 int e1000_set_spd_dplx(struct e1000_adapter *adapter, u32 spd, u8 dplx);
-int e1000_setup_all_rx_resources(struct e1000_adapter *adapter);
-int e1000_setup_all_tx_resources(struct e1000_adapter *adapter);
-void e1000_free_all_rx_resources(struct e1000_adapter *adapter);
-void e1000_free_all_tx_resources(struct e1000_adapter *adapter);
-void e1000_update_stats(struct e1000_adapter *adapter);
 bool e1000_has_link(struct e1000_adapter *adapter);
 void e1000_power_up_phy(struct e1000_adapter *);
 void e1000_set_ethtool_ops(struct net_device *netdev);
 void e1000_check_options(struct e1000_adapter *adapter);
 char *e1000_get_hw_dev_name(struct e1000_hw *hw);
+
+int e1000_up(struct e1000_adapter *adapter);
+void e1000_down(struct e1000_adapter *adapter);
+void e1000_reinit_locked(struct e1000_adapter *adapter);
+void e1000_reset(struct e1000_adapter *adapter);
+int e1000_setup_all_tx_resources(struct e1000_adapter *adapter);
+int e1000_setup_all_rx_resources(struct e1000_adapter *adapter);
+void e1000_free_all_tx_resources(struct e1000_adapter *adapter);
+void e1000_free_all_rx_resources(struct e1000_adapter *adapter);
+static int e1000_setup_tx_resources(struct e1000_adapter *adapter, struct e1000_tx_ring *txdr);
+static int e1000_setup_rx_resources(struct e1000_adapter *adapter, struct e1000_rx_ring *rxdr);
+static void e1000_free_tx_resources(struct e1000_adapter *adapter, struct e1000_tx_ring *tx_ring);
+static void e1000_free_rx_resources(struct e1000_adapter *adapter, struct e1000_rx_ring *rx_ring);
+void e1000_update_stats(struct e1000_adapter *adapter);
+
+static int e1000_init_module(void);
+static void e1000_exit_module(void);
+static int e1000_probe(struct pci_dev *pdev, const struct pci_device_id *ent);
+static void e1000_remove(struct pci_dev *pdev);
+static int e1000_alloc_queues(struct e1000_adapter *adapter);
+static int e1000_sw_init(struct e1000_adapter *adapter);
+int e1000_open(struct net_device *netdev);
+int e1000_close(struct net_device *netdev);
+static void e1000_configure_tx(struct e1000_adapter *adapter);
+static void e1000_configure_rx(struct e1000_adapter *adapter);
+static void e1000_setup_rctl(struct e1000_adapter *adapter);
+static void e1000_clean_all_tx_rings(struct e1000_adapter *adapter);
+static void e1000_clean_all_rx_rings(struct e1000_adapter *adapter);
+static void e1000_clean_tx_ring(struct e1000_adapter *adapter, struct e1000_tx_ring *tx_ring);
+static void e1000_clean_rx_ring(struct e1000_adapter *adapter, struct e1000_rx_ring *rx_ring);
+static void e1000_set_rx_mode(struct net_device *netdev);
+static void e1000_update_phy_info_task(struct work_struct *work);
+static void e1000_watchdog(struct work_struct *work);
+static void e1000_82547_tx_fifo_stall_task(struct work_struct *work);
+static netdev_tx_t e1000_xmit_frame(struct sk_buff *skb, struct net_device *netdev);
+static int e1000_change_mtu(struct net_device *netdev, int new_mtu);
+static int e1000_set_mac(struct net_device *netdev, void *p);
+static irqreturn_t e1000_intr(int irq, void *data);
+static bool e1000_clean_tx_irq(struct e1000_adapter *adapter, struct e1000_tx_ring *tx_ring);
+static int e1000_clean(struct napi_struct *napi, int budget);
+static bool e1000_clean_rx_irq(struct e1000_adapter *adapter, struct e1000_rx_ring *rx_ring, int *work_done, int work_to_do);
+static bool e1000_clean_jumbo_rx_irq(struct e1000_adapter *adapter, struct e1000_rx_ring *rx_ring, int *work_done, int work_to_do);
+static void e1000_alloc_dummy_rx_buffers(struct e1000_adapter *adapter, struct e1000_rx_ring *rx_ring, int cleaned_count) {
+}
+static void e1000_alloc_rx_buffers(struct e1000_adapter *adapter, struct e1000_rx_ring *rx_ring, int cleaned_count);
+static void e1000_alloc_jumbo_rx_buffers(struct e1000_adapter *adapter, struct e1000_rx_ring *rx_ring, int cleaned_count);
+static int e1000_ioctl(struct net_device *netdev, struct ifreq *ifr, int cmd);
+static int e1000_mii_ioctl(struct net_device *netdev, struct ifreq *ifr, int cmd);
+static void e1000_enter_82542_rst(struct e1000_adapter *adapter);
+static void e1000_leave_82542_rst(struct e1000_adapter *adapter);
+static void e1000_tx_timeout(struct net_device *dev);
+static void e1000_reset_task(struct work_struct *work);
+static void e1000_smartspeed(struct e1000_adapter *adapter);
+static int e1000_82547_fifo_workaround(struct e1000_adapter *adapter, struct sk_buff *skb);
+
+static bool e1000_vlan_used(struct e1000_adapter *adapter);
+static void e1000_vlan_mode(struct net_device *netdev, netdev_features_t features);
+static void e1000_vlan_filter_on_off(struct e1000_adapter *adapter, bool filter_on);
+static int e1000_vlan_rx_add_vid(struct net_device *netdev, __be16 proto, u16 vid);
+static int e1000_vlan_rx_kill_vid(struct net_device *netdev, __be16 proto, u16 vid);
+static void e1000_restore_vlan(struct e1000_adapter *adapter);
+
+#ifdef CONFIG_PM
+static int e1000_suspend(struct pci_dev *pdev, pm_message_t state);
+static int e1000_resume(struct pci_dev *pdev);
+#endif
+static void e1000_shutdown(struct pci_dev *pdev);
+
+#ifdef CONFIG_NET_POLL_CONTROLLER
+/* for netdump / net console */
+static void e1000_netpoll(struct net_device *netdev);
+#endif
+
+static pci_ers_result_t e1000_io_error_detected(struct pci_dev *pdev, pci_channel_state_t state);
+static pci_ers_result_t e1000_io_slot_reset(struct pci_dev *pdev);
+static void e1000_io_resume(struct pci_dev *pdev);
 
 #endif /* _E1000_H_ */

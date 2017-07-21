@@ -551,9 +551,9 @@ static void e1000_get_drvinfo(struct net_device *netdev,
 {
 	struct e1000_adapter *adapter = netdev_priv(netdev);
 
-	strlcpy(drvinfo->driver,  e1000_driver_name,
+	strlcpy(drvinfo->driver,  DRV_NAME,
 		sizeof(drvinfo->driver));
-	strlcpy(drvinfo->version, e1000_driver_version,
+	strlcpy(drvinfo->version, DRV_VERSION,
 		sizeof(drvinfo->version));
 
 	strlcpy(drvinfo->bus_info, pci_name(adapter->pdev),
