@@ -5,4 +5,3 @@ module_param(copybreak, uint, 0644) : insmod 시 전달되는 파라메터 정�
 
 # 컴파일러 옵션
 __read_mostly : read_mostly section 에 위치 시켜서, cache hit에 기여하게 한다. 어떤 방법으로?
-
