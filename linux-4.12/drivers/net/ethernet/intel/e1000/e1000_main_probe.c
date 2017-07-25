@@ -39,7 +39,6 @@ int e1000_probe(struct pci_dev *pdev, const struct pci_device_id *ent) {
 	u16 eeprom_apme_mask = E1000_EEPROM_APME;
 	int bars, need_ioport;
 
-	/* do not allocate ioport bars when not needed */
 	need_ioport = e1000_is_need_ioport(pdev);
 	if (need_ioport) {
 		bars = pci_select_bars(pdev, IORESOURCE_MEM | IORESOURCE_IO);
@@ -48,26 +47,16 @@ int e1000_probe(struct pci_dev *pdev, const struct pci_device_id *ent) {
 		bars = pci_select_bars(pdev, IORESOURCE_MEM);
 		err = pci_enable_device_mem(pdev);
 	}
-	if (err)
-		return err;
 
-	err = pci_request_selected_regions(pdev, bars, DRV_NAME);
-	if (err)
-		goto err_pci_reg;
-
+	pci_request_selected_regions(pdev, bars, DRV_NAME);
 	pci_set_master(pdev);
-	err = pci_save_state(pdev);
-	if (err)
-		goto err_alloc_etherdev;
+	pci_save_state(pdev);
 
-	err = -ENOMEM;
 	netdev = alloc_etherdev(sizeof(struct e1000_adapter));
-	if (!netdev)
-		goto err_alloc_etherdev;
-
 	SET_NETDEV_DEV(netdev, &pdev->dev);
 
 	pci_set_drvdata(pdev, netdev);
+
 	adapter = netdev_priv(netdev);
 	adapter->netdev = netdev;
 	adapter->pdev = pdev;
@@ -77,11 +66,7 @@ int e1000_probe(struct pci_dev *pdev, const struct pci_device_id *ent) {
 
 	hw = &adapter->hw;
 	hw->back = adapter;
-
-	err = -EIO;
 	hw->hw_addr = pci_ioremap_bar(pdev, BAR_0);
-	if (!hw->hw_addr)
-		goto err_ioremap;
 
 	if (adapter->need_ioport) {
 		for (i = BAR_1; i <= BAR_5; i++) {
@@ -95,9 +80,7 @@ int e1000_probe(struct pci_dev *pdev, const struct pci_device_id *ent) {
 	}
 
 	/* make ready for any if (hw->...) below */
-	err = e1000_init_hw_struct(adapter, hw);
-	if (err)
-		goto err_sw_init;
+	e1000_init_hw_struct(adapter, hw);
 
 	/* there is a workaround being applied below that limits
 	 * 64-bit DMA addresses to 64-bit hardware.  There are some
@@ -323,8 +306,6 @@ int e1000_probe(struct pci_dev *pdev, const struct pci_device_id *ent) {
 /**
  * e1000_is_need_ioport - determine if an adapter needs ioport resources or not
  * @pdev: PCI device information struct
- *
- * Return true if an adapter needs ioport resources
  **/
 static int e1000_is_need_ioport(struct pci_dev *pdev) {
 	switch (pdev->device) {
