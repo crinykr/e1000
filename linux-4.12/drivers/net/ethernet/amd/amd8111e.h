@@ -561,8 +561,8 @@ typedef enum {
 
 /* Driver definitions */
 
-#define	 PCI_VENDOR_ID_AMD		0x1022
-#define  PCI_DEVICE_ID_AMD8111E_7462	0x7462
+#define PCI_VENDOR_ID_AMD				0x1022
+#define PCI_DEVICE_ID_AMD8111E_7462	0x7462
 
 #define MAX_UNITS			8 /* Maximum number of devices possible */
 

@@ -30,10 +30,9 @@
 
 #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 
-#define DRV_NAME	"pcnet32"
-#define DRV_VERSION	"1.35"
-#define DRV_RELDATE	"21.Apr.2008"
-#define PFX		DRV_NAME ": "
+#define DRV_NAME "pcnet32"
+#define DRV_VERSION "1.35"
+#define PFX DRV_NAME ": "
 
 #define PCNET32_PORT_AUI      0x00
 #define PCNET32_PORT_10BT     0x01
@@ -235,7 +234,16 @@ static void pcnet32_check_media(struct net_device *dev, int verbose);
 
 #define PCNET32_REGS_PER_PHY	32
 #define PCNET32_MAX_PHYS	32
-
 #define PCNET32_MSG_DEFAULT (NETIF_MSG_DRV | NETIF_MSG_PROBE | NETIF_MSG_LINK)
+
+extern const struct pcnet32_access pcnet32_wio;
+extern const struct pcnet32_access pcnet32_dwio;
+
+void pcnet32_wio_reset(unsigned long addr);
+u16 pcnet32_wio_read_csr(unsigned long addr, int index);
+int pcnet32_wio_check(unsigned long addr);
+void pcnet32_dwio_reset(unsigned long addr);
+u16 pcnet32_dwio_read_csr(unsigned long addr, int index);
+int pcnet32_dwio_check(unsigned long addr);
 
 #endif /* AMD_PCNET32_H_ */
