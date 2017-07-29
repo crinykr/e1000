@@ -246,4 +246,12 @@ void pcnet32_dwio_reset(unsigned long addr);
 u16 pcnet32_dwio_read_csr(unsigned long addr, int index);
 int pcnet32_dwio_check(unsigned long addr);
 
+static int pcnet32_probe_pci(struct pci_dev *pdev, const struct pci_device_id *ent);
+static void pcnet32_remove_one(struct pci_dev *pdev);
+static int pcnet32_pm_suspend(struct pci_dev *pdev, pm_message_t state);
+static int pcnet32_pm_resume(struct pci_dev *pdev);
+
+#define MAX_INTERRUPT_WORK (2)
+#define RX_COPYBREAK (200)
+
 #endif /* AMD_PCNET32_H_ */

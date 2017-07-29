@@ -14,6 +14,13 @@
 
 #include "pcnet32.h"
 
+MODULE_AUTHOR("Thomas Bogendoerfer");
+MODULE_DESCRIPTION("Driver for PCnet32 and PCnetPCI based ethercards");
+MODULE_LICENSE("GPL");
+
+static int cards_found;
+static int pcnet32_debug;
+
 static const struct pci_device_id pcnet32_pci_tbl[] =
 { // PCI device identifiers for "new style" Linux PCI Device Drivers
 	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_LANCE_HOME), }, //
@@ -23,41 +30,66 @@ static const struct pci_device_id pcnet32_pci_tbl[] =
 
 MODULE_DEVICE_TABLE( pci, pcnet32_pci_tbl);
 
-static int cards_found;
+static struct pci_driver pcnet32_driver =
+{ //
+	.name = DRV_NAME, //
+	.id_table = pcnet32_pci_tbl,
+	.probe = pcnet32_probe_pci,
+	.remove = pcnet32_remove_one,
+	.suspend = pcnet32_pm_suspend,
+	.resume = pcnet32_pm_resume, };
 
-/* VLB I/O addresses */
-static unsigned int pcnet32_portlist[] =
-{ 0x300, 0x320, 0x340, 0x360, 0 };
+static int __init pcnet32_init_module(void)
+{
+	printk("### pcnet32_init_module(%s)\n", __TIME__);
 
-static int pcnet32_debug;
-static int tx_start = 1; /* Mapping -- 0:20, 1:64, 2:128, 3:~220 (depends on chip vers) */
-static int pcnet32vlb; /* check for VLB cards ? */
+	pcnet32_debug = netif_msg_init(-1, PCNET32_MSG_DEFAULT); // debug level : -1
+
+	pci_register_driver(&pcnet32_driver);
+
+	return cards_found ? 0 : -ENODEV;
+}
+
+module_init( pcnet32_init_module);
+
+static int pcnet32_probe_pci(struct pci_dev *pdev, const struct pci_device_id *ent) {
+	unsigned long ioaddr;
+
+	pci_enable_device(pdev);
+
+	pci_set_master(pdev);
+
+	ioaddr = pci_resource_start(pdev, 0);
+
+	pci_set_dma_mask(pdev, PCNET32_DMA_MASK);
+
+	request_region(ioaddr, PCNET32_TOTAL_SIZE, "pcnet32_probe_pci");
+
+	return pcnet32_probe1(ioaddr, 1, pdev);
+}
 
 static struct net_device *pcnet32_dev;
 
-static int max_interrupt_work = 2;
-static int rx_copybreak = 200;
-
 /* table to translate option values from tulip to internal options */
 static const unsigned char options_mapping[] =
-{
-PCNET32_PORT_ASEL, /* 0 Auto-select */
-PCNET32_PORT_AUI, /* 1 BNC/AUI */
-PCNET32_PORT_AUI, /* 2 AUI/BNC */
-PCNET32_PORT_ASEL, /* 3 not supported */
-PCNET32_PORT_10BT | PCNET32_PORT_FD, /* 4 10baseT-FD */
-PCNET32_PORT_ASEL, /* 5 not supported */
-PCNET32_PORT_ASEL, /* 6 not supported */
-PCNET32_PORT_ASEL, /* 7 not supported */
-PCNET32_PORT_ASEL, /* 8 not supported */
-PCNET32_PORT_MII, /* 9 MII 10baseT */
-PCNET32_PORT_MII | PCNET32_PORT_FD, /* 10 MII 10baseT-FD */
-PCNET32_PORT_MII, /* 11 MII (autosel) */
-PCNET32_PORT_10BT, /* 12 10BaseT */
-PCNET32_PORT_MII | PCNET32_PORT_100, /* 13 MII 100BaseTx */
-PCNET32_PORT_MII | PCNET32_PORT_100 | PCNET32_PORT_FD, /* 14 MII 100BaseTx-FD */
-PCNET32_PORT_ASEL /* 15 not supported */
-};
+{ //
+	PCNET32_PORT_ASEL, /* 0 Auto-select */
+	PCNET32_PORT_AUI, /* 1 BNC/AUI */
+	PCNET32_PORT_AUI, /* 2 AUI/BNC */
+	PCNET32_PORT_ASEL, /* 3 not supported */
+	PCNET32_PORT_10BT | PCNET32_PORT_FD, /* 4 10baseT-FD */
+	PCNET32_PORT_ASEL, /* 5 not supported */
+	PCNET32_PORT_ASEL, /* 6 not supported */
+	PCNET32_PORT_ASEL, /* 7 not supported */
+	PCNET32_PORT_ASEL, /* 8 not supported */
+	PCNET32_PORT_MII, /* 9 MII 10baseT */
+	PCNET32_PORT_MII | PCNET32_PORT_FD, /* 10 MII 10baseT-FD */
+	PCNET32_PORT_MII, /* 11 MII (autosel) */
+	PCNET32_PORT_10BT, /* 12 10BaseT */
+	PCNET32_PORT_MII | PCNET32_PORT_100, /* 13 MII 100BaseTx */
+	PCNET32_PORT_MII | PCNET32_PORT_100 | PCNET32_PORT_FD, /* 14 MII 100BaseTx-FD */
+	PCNET32_PORT_ASEL /* 15 not supported */
+	};
 
 static const char pcnet32_gstrings_test[][ETH_GSTRING_LEN] =
 { "Loopback test  (offline)" };
@@ -762,7 +794,7 @@ static void pcnet32_rx_entry(struct net_device *dev, struct pcnet32_private *lp,
 		return;
 	}
 
-	if (pkt_len > rx_copybreak) {
+	if (pkt_len > RX_COPYBREAK) {
 		struct sk_buff *newskb;
 		dma_addr_t new_dma_addr;
 
@@ -1008,72 +1040,36 @@ static void pcnet32_get_regs(struct net_device *dev, struct ethtool_regs *regs, 
 }
 
 static const struct ethtool_ops pcnet32_ethtool_ops =
-{ .get_drvinfo = pcnet32_get_drvinfo, .get_msglevel = pcnet32_get_msglevel, .set_msglevel = pcnet32_set_msglevel, .nway_reset = pcnet32_nway_reset, .get_link = pcnet32_get_link, .get_ringparam =
-	pcnet32_get_ringparam, .set_ringparam = pcnet32_set_ringparam, .get_strings = pcnet32_get_strings, .self_test = pcnet32_ethtool_test, .set_phys_id = pcnet32_set_phys_id, .get_regs_len =
-	pcnet32_get_regs_len, .get_regs = pcnet32_get_regs, .get_sset_count = pcnet32_get_sset_count, .get_link_ksettings = pcnet32_get_link_ksettings, .set_link_ksettings = pcnet32_set_link_ksettings, };
-
-/* only probes for non-PCI devices, the rest are handled by
- * pci_register_driver via pcnet32_probe_pci */
-
-static void pcnet32_probe_vlbus(unsigned int *pcnet32_portlist) {
-	unsigned int *port, ioaddr;
-
-	/* search for PCnet32 VLB cards at known addresses */
-	for (port = pcnet32_portlist; (ioaddr = *port); port++) {
-		if (request_region(ioaddr, PCNET32_TOTAL_SIZE, "pcnet32_probe_vlbus")) {
-			/* check if there is really a pcnet chip on that ioaddr */
-			if ((inb(ioaddr + 14) == 0x57) && (inb(ioaddr + 15) == 0x57)) {
-				pcnet32_probe1(ioaddr, 0, NULL);
-			} else {
-				release_region(ioaddr, PCNET32_TOTAL_SIZE);
-			}
-		}
-	}
-}
-
-static int pcnet32_probe_pci(struct pci_dev *pdev, const struct pci_device_id *ent) {
-	unsigned long ioaddr;
-	int err;
-
-	err = pci_enable_device(pdev);
-	if (err < 0) {
-		if (pcnet32_debug & NETIF_MSG_PROBE)
-			pr_err("failed to enable device -- err=%d\n", err);
-		return err;
-	}
-	pci_set_master(pdev);
-
-	ioaddr = pci_resource_start(pdev, 0);
-	if (!ioaddr) {
-		if (pcnet32_debug & NETIF_MSG_PROBE)
-			pr_err("card has no PCI IO resources, aborting\n");
-		return -ENODEV;
-	}
-
-	err = pci_set_dma_mask(pdev, PCNET32_DMA_MASK);
-	if (err) {
-		if (pcnet32_debug & NETIF_MSG_PROBE)
-			pr_err("architecture does not support 32bit PCI busmaster DMA\n");
-		return err;
-	}
-	if (!request_region(ioaddr, PCNET32_TOTAL_SIZE, "pcnet32_probe_pci")) {
-		if (pcnet32_debug & NETIF_MSG_PROBE)
-			pr_err("io address range already allocated\n");
-		return -EBUSY;
-	}
-
-	err = pcnet32_probe1(ioaddr, 1, pdev);
-	if (err < 0)
-		pci_disable_device(pdev);
-
-	return err;
-}
+{ //
+	.get_drvinfo = pcnet32_get_drvinfo, //
+	.get_msglevel = pcnet32_get_msglevel,
+	.set_msglevel = pcnet32_set_msglevel,
+	.nway_reset = pcnet32_nway_reset,
+	.get_link = pcnet32_get_link,
+	.get_ringparam = pcnet32_get_ringparam,
+	.set_ringparam = pcnet32_set_ringparam,
+	.get_strings = pcnet32_get_strings,
+	.self_test = pcnet32_ethtool_test,
+	.set_phys_id = pcnet32_set_phys_id,
+	.get_regs_len = pcnet32_get_regs_len,
+	.get_regs = pcnet32_get_regs,
+	.get_sset_count = pcnet32_get_sset_count,
+	.get_link_ksettings = pcnet32_get_link_ksettings,
+	.set_link_ksettings = pcnet32_set_link_ksettings, };
 
 static const struct net_device_ops pcnet32_netdev_ops =
-{ .ndo_open = pcnet32_open, .ndo_stop = pcnet32_close, .ndo_start_xmit = pcnet32_start_xmit, .ndo_tx_timeout = pcnet32_tx_timeout, .ndo_get_stats = pcnet32_get_stats, .ndo_set_rx_mode =
-	pcnet32_set_multicast_list, .ndo_do_ioctl = pcnet32_ioctl, .ndo_set_mac_address = eth_mac_addr, .ndo_validate_addr = eth_validate_addr,
+{ //
+	.ndo_open = pcnet32_open, //
+	.ndo_stop = pcnet32_close,
+	.ndo_start_xmit = pcnet32_start_xmit,
+	.ndo_tx_timeout = pcnet32_tx_timeout,
+	.ndo_get_stats = pcnet32_get_stats,
+	.ndo_set_rx_mode = pcnet32_set_multicast_list,
+	.ndo_do_ioctl = pcnet32_ioctl,
+	.ndo_set_mac_address = eth_mac_addr,
+	.ndo_validate_addr = eth_validate_addr,
 #ifdef CONFIG_NET_POLL_CONTROLLER
-.ndo_poll_controller = pcnet32_poll_controller,
+	.ndo_poll_controller = pcnet32_poll_controller,
 #endif
 	};
 
@@ -1963,7 +1959,7 @@ static irqreturn_t pcnet32_interrupt(int irq, void *dev_id) {
 	struct pcnet32_private *lp;
 	unsigned long ioaddr;
 	u16 csr0;
-	int boguscnt = max_interrupt_work;
+	int boguscnt = MAX_INTERRUPT_WORK;
 
 	ioaddr = dev->base_addr;
 	lp = netdev_priv(dev);
@@ -2332,72 +2328,6 @@ static void pcnet32_remove_one(struct pci_dev *pdev) {
 	}
 }
 
-static struct pci_driver pcnet32_driver =
-{ //
-	.name = DRV_NAME, //
-	.probe = pcnet32_probe_pci,
-	.remove = pcnet32_remove_one,
-	.id_table = pcnet32_pci_tbl,
-	.suspend = pcnet32_pm_suspend,
-	.resume = pcnet32_pm_resume, };
-
-/* An additional parameter that may be passed in... */
-static int debug = -1;
-static int tx_start_pt = -1;
-static int pcnet32_have_pci;
-
-module_param(debug, int, 0);
-MODULE_PARM_DESC(debug, DRV_NAME " debug level");
-
-module_param(max_interrupt_work, int, 0);
-MODULE_PARM_DESC(max_interrupt_work, DRV_NAME " maximum events handled per interrupt");
-
-module_param(rx_copybreak, int, 0);
-MODULE_PARM_DESC(rx_copybreak, DRV_NAME " copy breakpoint for copy-only-tiny-frames");
-
-module_param(tx_start_pt, int, 0);
-MODULE_PARM_DESC(tx_start_pt, DRV_NAME " transmit start point (0-3)");
-
-module_param(pcnet32vlb, int, 0);
-MODULE_PARM_DESC(pcnet32vlb, DRV_NAME " Vesa local bus (VLB) support (0/1)");
-
-module_param_array(options, int, NULL, 0);
-MODULE_PARM_DESC(options, DRV_NAME " initial option setting(s) (0-15)");
-
-module_param_array(full_duplex, int, NULL, 0);
-MODULE_PARM_DESC(full_duplex, DRV_NAME " full duplex setting(s) (1)");
-
-module_param_array(homepna, int, NULL, 0);
-MODULE_PARM_DESC(homepna, DRV_NAME " mode for 79C978 cards (1 for HomePNA, 0 for Ethernet, default Ethernet"); /* Module Parameter for HomePNA cards added by Patrick Simmons, 2004 */
-
-MODULE_AUTHOR("Thomas Bogendoerfer");
-MODULE_DESCRIPTION("Driver for PCnet32 and PCnetPCI based ethercards");
-MODULE_LICENSE("GPL");
-
-static int __init pcnet32_init_module(void)
-{
-	printk("### pcnet32_init_module(%s)\n", __TIME__);
-
-	pcnet32_debug = netif_msg_init(debug, PCNET32_MSG_DEFAULT);
-
-	/* transmit start point (0-3) */
-	if ((tx_start_pt >= 0) && (tx_start_pt <= 3))
-	tx_start = tx_start_pt;
-
-	/* find the PCI devices */
-	if (!pci_register_driver(&pcnet32_driver))
-	pcnet32_have_pci = 1;
-
-	/* should we find any remaining VLbus devices ? */
-	if (pcnet32vlb)
-	pcnet32_probe_vlbus(pcnet32_portlist);
-
-	if (cards_found && (pcnet32_debug & NETIF_MSG_PROBE))
-	pr_info("%d cards_found\n", cards_found);
-
-	return (pcnet32_have_pci + cards_found) ? 0 : -ENODEV;
-}
-
 static void __exit pcnet32_cleanup_module(void)
 {
 	struct net_device *next_dev;
@@ -2414,11 +2344,9 @@ static void __exit pcnet32_cleanup_module(void)
 		pcnet32_dev = next_dev;
 	}
 
-	if (pcnet32_have_pci)
 	pci_unregister_driver(&pcnet32_driver);
 }
 
-module_init( pcnet32_init_module);
 module_exit( pcnet32_cleanup_module);
 
 /*
