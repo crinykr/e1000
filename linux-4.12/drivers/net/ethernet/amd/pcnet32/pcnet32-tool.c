@@ -93,3 +93,30 @@ const struct pcnet32_access pcnet32_dwio =
 	.read_rap = pcnet32_dwio_read_rap,
 	.write_rap = pcnet32_dwio_write_rap,
 	.reset = pcnet32_dwio_reset };
+
+/* This routine assumes that the lp->lock is held */
+int mdio_read(struct net_device *dev, int phy_id, int reg_num) {
+	struct pcnet32_private *lp = netdev_priv(dev);
+	unsigned long ioaddr = dev->base_addr;
+	u16 val_out;
+
+	if (!lp->mii)
+		return 0;
+
+	lp->a->write_bcr(ioaddr, 33, ((phy_id & 0x1f) << 5) | (reg_num & 0x1f));
+	val_out = lp->a->read_bcr(ioaddr, 34);
+
+	return val_out;
+}
+
+/* This routine assumes that the lp->lock is held */
+void mdio_write(struct net_device *dev, int phy_id, int reg_num, int val) {
+	struct pcnet32_private *lp = netdev_priv(dev);
+	unsigned long ioaddr = dev->base_addr;
+
+	if (!lp->mii)
+		return;
+
+	lp->a->write_bcr(ioaddr, 33, ((phy_id & 0x1f) << 5) | (reg_num & 0x1f));
+	lp->a->write_bcr(ioaddr, 34, val);
+}
