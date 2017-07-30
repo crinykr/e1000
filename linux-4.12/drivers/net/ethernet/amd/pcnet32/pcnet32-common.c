@@ -11,26 +11,6 @@ static int pcnet32_check_otherphy(struct net_device *dev);
  * Because these chips are 32bit chips, there is no 16MB limitation and we don't need bounce buffers.
  */
 
-void pcnet32_netif_stop(struct net_device *dev) {
-	struct pcnet32_private *lp = netdev_priv(dev);
-
-	netif_trans_update(dev); /* prevent tx timeout */
-	napi_disable(&lp->napi);
-	netif_tx_disable(dev);
-}
-
-void pcnet32_netif_start(struct net_device *dev) {
-	struct pcnet32_private *lp = netdev_priv(dev);
-	ulong ioaddr = dev->base_addr;
-	u16 val;
-
-	netif_wake_queue(dev);
-	val = lp->a->read_csr(ioaddr, CSR3);
-	val &= 0x00ff;
-	lp->a->write_csr(ioaddr, CSR3, val);
-	napi_enable(&lp->napi);
-}
-
 void pcnet32_purge_rx_ring(struct net_device *dev) {
 	struct pcnet32_private *lp = netdev_priv(dev);
 	int i;
@@ -47,63 +27,6 @@ void pcnet32_purge_rx_ring(struct net_device *dev) {
 		}
 		lp->rx_skbuff[i] = NULL;
 		lp->rx_dma_addr[i] = 0;
-	}
-}
-
-/* the pcnet32 has been issued a stop or reset.  Wait for the stop bit
- * then flush the pending transmit operations, re-initialize the ring,
- * and tell the chip to initialize.
- */
-void pcnet32_restart(struct net_device *dev, unsigned int csr0_bits) {
-	struct pcnet32_private *lp = netdev_priv(dev);
-	unsigned long ioaddr = dev->base_addr;
-	int i;
-
-	/* wait for stop */
-	for (i = 0; i < 100; i++)
-		if (lp->a->read_csr(ioaddr, CSR0) & CSR0_STOP)
-			break;
-
-	if (i >= 100)
-		netif_err(lp, drv, dev, "%s timed out waiting for stop\n", __func__);
-
-	pcnet32_purge_tx_ring(dev);
-	if (pcnet32_init_ring(dev))
-		return;
-
-	/* ReInit Ring */
-	lp->a->write_csr(ioaddr, CSR0, CSR0_INIT);
-	i = 0;
-	while (i++ < 1000)
-		if (lp->a->read_csr(ioaddr, CSR0) & CSR0_IDON)
-			break;
-
-	lp->a->write_csr(ioaddr, CSR0, csr0_bits);
-}
-
-void pcnet32_free_ring(struct net_device *dev) {
-	struct pcnet32_private *lp = netdev_priv(dev);
-
-	kfree(lp->tx_skbuff);
-	lp->tx_skbuff = NULL;
-
-	kfree(lp->rx_skbuff);
-	lp->rx_skbuff = NULL;
-
-	kfree(lp->tx_dma_addr);
-	lp->tx_dma_addr = NULL;
-
-	kfree(lp->rx_dma_addr);
-	lp->rx_dma_addr = NULL;
-
-	if (lp->tx_ring) {
-		pci_free_consistent(lp->pci_dev, sizeof(struct pcnet32_tx_head) * lp->tx_ring_size, lp->tx_ring, lp->tx_ring_dma_addr);
-		lp->tx_ring = NULL;
-	}
-
-	if (lp->rx_ring) {
-		pci_free_consistent(lp->pci_dev, sizeof(struct pcnet32_rx_head) * lp->rx_ring_size, lp->rx_ring, lp->rx_ring_dma_addr);
-		lp->rx_ring = NULL;
 	}
 }
 
@@ -190,6 +113,32 @@ int pcnet32_init_ring(struct net_device *dev) {
 	lp->init_block->tx_ring = cpu_to_le32(lp->tx_ring_dma_addr);
 	wmb(); /* Make sure all changes are visible */
 	return 0;
+}
+
+void pcnet32_free_ring(struct net_device *dev) {
+	struct pcnet32_private *lp = netdev_priv(dev);
+
+	kfree(lp->tx_skbuff);
+	lp->tx_skbuff = NULL;
+
+	kfree(lp->rx_skbuff);
+	lp->rx_skbuff = NULL;
+
+	kfree(lp->tx_dma_addr);
+	lp->tx_dma_addr = NULL;
+
+	kfree(lp->rx_dma_addr);
+	lp->rx_dma_addr = NULL;
+
+	if (lp->tx_ring) {
+		pci_free_consistent(lp->pci_dev, sizeof(struct pcnet32_tx_head) * lp->tx_ring_size, lp->tx_ring, lp->tx_ring_dma_addr);
+		lp->tx_ring = NULL;
+	}
+
+	if (lp->rx_ring) {
+		pci_free_consistent(lp->pci_dev, sizeof(struct pcnet32_rx_head) * lp->rx_ring_size, lp->rx_ring, lp->rx_ring_dma_addr);
+		lp->rx_ring = NULL;
+	}
 }
 
 /*
@@ -282,4 +231,104 @@ static int pcnet32_check_otherphy(struct net_device *dev) {
 		}
 	}
 	return 0;
+}
+
+/* the pcnet32 has been issued a stop or reset.  Wait for the stop bit
+ * then flush the pending transmit operations, re-initialize the ring,
+ * and tell the chip to initialize.
+ */
+void pcnet32_restart(struct net_device *dev, unsigned int csr0_bits) {
+	struct pcnet32_private *lp = netdev_priv(dev);
+	unsigned long ioaddr = dev->base_addr;
+	int i;
+
+	/* wait for stop */
+	for (i = 0; i < 100; i++)
+		if (lp->a->read_csr(ioaddr, CSR0) & CSR0_STOP)
+			break;
+
+	if (i >= 100)
+		netif_err(lp, drv, dev, "%s timed out waiting for stop\n", __func__);
+
+	pcnet32_purge_tx_ring(dev);
+	if (pcnet32_init_ring(dev))
+		return;
+
+	/* ReInit Ring */
+	lp->a->write_csr(ioaddr, CSR0, CSR0_INIT);
+	i = 0;
+	while (i++ < 1000)
+		if (lp->a->read_csr(ioaddr, CSR0) & CSR0_IDON)
+			break;
+
+	lp->a->write_csr(ioaddr, CSR0, csr0_bits);
+}
+
+/*
+ * lp->lock must be held.
+ */
+int pcnet32_suspend(struct net_device *dev, unsigned long *flags, int can_sleep) {
+	int csr5;
+	struct pcnet32_private *lp = netdev_priv(dev);
+	const struct pcnet32_access *a = lp->a;
+	ulong ioaddr = dev->base_addr;
+	int ticks;
+
+	/* really old chips have to be stopped. */
+	if (lp->chip_version < PCNET32_79C970A)
+		return 0;
+
+	/* set SUSPEND (SPND) - CSR5 bit 0 */
+	csr5 = a->read_csr(ioaddr, CSR5);
+	a->write_csr(ioaddr, CSR5, csr5 | CSR5_SUSPEND);
+
+	/* poll waiting for bit to be set */
+	ticks = 0;
+	while (!(a->read_csr(ioaddr, CSR5) & CSR5_SUSPEND)) {
+		spin_unlock_irqrestore(&lp->lock, *flags);
+		if (can_sleep)
+			msleep(1);
+		else
+			mdelay(1);
+		spin_lock_irqsave(&lp->lock, *flags);
+		ticks++;
+		if (ticks > 200) {
+			netif_printk(lp, hw, KERN_DEBUG, dev, "Error getting into suspend!\n");
+			return 0;
+		}
+	}
+	return 1;
+}
+
+void pcnet32_clr_suspend(struct pcnet32_private *lp, ulong ioaddr) {
+	int csr5 = lp->a->read_csr(ioaddr, CSR5);
+	/* clear SUSPEND (SPND) - CSR5 bit 0 */
+	lp->a->write_csr(ioaddr, CSR5, csr5 & ~CSR5_SUSPEND);
+}
+
+/* This routine assumes that the lp->lock is held */
+int mdio_read(struct net_device *dev, int phy_id, int reg_num) {
+	struct pcnet32_private *lp = netdev_priv(dev);
+	unsigned long ioaddr = dev->base_addr;
+	u16 val_out;
+
+	if (!lp->mii)
+		return 0;
+
+	lp->a->write_bcr(ioaddr, 33, ((phy_id & 0x1f) << 5) | (reg_num & 0x1f));
+	val_out = lp->a->read_bcr(ioaddr, 34);
+
+	return val_out;
+}
+
+/* This routine assumes that the lp->lock is held */
+void mdio_write(struct net_device *dev, int phy_id, int reg_num, int val) {
+	struct pcnet32_private *lp = netdev_priv(dev);
+	unsigned long ioaddr = dev->base_addr;
+
+	if (!lp->mii)
+		return;
+
+	lp->a->write_bcr(ioaddr, 33, ((phy_id & 0x1f) << 5) | (reg_num & 0x1f));
+	lp->a->write_bcr(ioaddr, 34, val);
 }

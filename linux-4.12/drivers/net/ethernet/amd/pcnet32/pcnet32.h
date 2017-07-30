@@ -111,6 +111,13 @@
 
 #define PCNET32_79C970A	0x2621
 
+#define MAX_INTERRUPT_WORK (2)
+#define RX_COPYBREAK (200)
+
+#define PCNET32_REGS_PER_PHY	32
+#define PCNET32_MAX_PHYS	32
+#define PCNET32_MSG_DEFAULT (NETIF_MSG_DRV | NETIF_MSG_PROBE | NETIF_MSG_LINK)
+
 /* The PCNET32 Rx and Tx ring descriptors. */
 struct pcnet32_rx_head {
 	__le32 base;
@@ -207,26 +214,12 @@ struct pcnet32_private {
 	u16 save_regs[4];
 };
 
-static int pcnet32_open(struct net_device *);
-static netdev_tx_t pcnet32_start_xmit(struct sk_buff *, struct net_device *);
-static void pcnet32_tx_timeout(struct net_device *dev);
-static irqreturn_t pcnet32_interrupt(int, void *);
-static int pcnet32_close(struct net_device *);
-static struct net_device_stats *pcnet32_get_stats(struct net_device *);
-static void pcnet32_load_multicast(struct net_device *dev);
-static void pcnet32_set_multicast_list(struct net_device *);
-static int pcnet32_ioctl(struct net_device *, struct ifreq *, int);
-static int pcnet32_get_regs_len(struct net_device *dev);
-static void pcnet32_get_regs(struct net_device *dev, struct ethtool_regs *regs, void *ptr);
-static int pcnet32_alloc_ring(struct net_device *dev, const char *name);
+extern int pcnet32_debug;
+int pcnet32_probe1(unsigned long, int, struct pci_dev *);
 
-#define PCNET32_REGS_PER_PHY	32
-#define PCNET32_MAX_PHYS	32
-#define PCNET32_MSG_DEFAULT (NETIF_MSG_DRV | NETIF_MSG_PROBE | NETIF_MSG_LINK)
-
-extern const struct pcnet32_access pcnet32_wio;
-extern const struct pcnet32_access pcnet32_dwio;
-
+/*
+ * pcnet32-probe-tool
+ */
 void pcnet32_wio_reset(unsigned long addr);
 u16 pcnet32_wio_read_csr(unsigned long addr, int index);
 int pcnet32_wio_check(unsigned long addr);
@@ -234,36 +227,20 @@ void pcnet32_dwio_reset(unsigned long addr);
 u16 pcnet32_dwio_read_csr(unsigned long addr, int index);
 int pcnet32_dwio_check(unsigned long addr);
 
-static void pcnet32_remove_one(struct pci_dev *pdev);
-static int pcnet32_pm_suspend(struct pci_dev *pdev, pm_message_t state);
-static int pcnet32_pm_resume(struct pci_dev *pdev);
-
-#define MAX_INTERRUPT_WORK (2)
-#define RX_COPYBREAK (200)
-
-void pcnet32_ethtool_test(struct net_device *dev, struct ethtool_test *eth_test, u64 * data);
-
+/*
+ * pcnet32-common
+ */
 int mdio_read(struct net_device *dev, int phy_id, int reg_num);
 void mdio_write(struct net_device *dev, int phy_id, int reg_num, int val);
-
-int pcnet32_probe_pci(struct pci_dev *, const struct pci_device_id *);
-
-void pcnet32_netif_stop(struct net_device *dev);
-void pcnet32_netif_start(struct net_device *dev);
-
 void pcnet32_purge_rx_ring(struct net_device *dev);
-
-extern int pcnet32_debug;
-extern int cards_found;
-
-extern int options[MAX_UNITS];
-extern int full_duplex[MAX_UNITS];
-extern int homepna[MAX_UNITS];
-
 void pcnet32_restart(struct net_device *dev, unsigned int csr0_bits);
 void pcnet32_free_ring(struct net_device *dev);
 void pcnet32_purge_tx_ring(struct net_device *dev);
 int pcnet32_init_ring(struct net_device *);
 void pcnet32_check_media(struct net_device *dev, int verbose);
+void pcnet32_clr_suspend(struct pcnet32_private *lp, ulong ioaddr);
+int pcnet32_suspend(struct net_device *dev, unsigned long *flags, int can_sleep);
+int pcnet32_open(struct net_device *);
+int pcnet32_close(struct net_device *);
 
 #endif /* AMD_PCNET32_H_ */

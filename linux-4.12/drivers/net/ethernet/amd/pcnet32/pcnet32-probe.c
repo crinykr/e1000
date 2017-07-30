@@ -1,60 +1,50 @@
 #include "pcnet32.h"
 
-extern const struct net_device_ops pcnet32_netdev_ops;
 extern const struct ethtool_ops pcnet32_ethtool_ops;
+extern const struct net_device_ops pcnet32_netdev_ops;
 
-extern struct net_device *pcnet32_dev;
+extern const struct pcnet32_access pcnet32_wio;
+extern const struct pcnet32_access pcnet32_dwio;
 
-static int pcnet32_probe1(unsigned long, int, struct pci_dev *);
+int options[MAX_UNITS];
+int full_duplex[MAX_UNITS];
+int homepna[MAX_UNITS];
+
+int cards_found;
+struct net_device *pcnet32_dev;
+
 static int pcnet32_poll(struct napi_struct *napi, int budget);
 static int pcnet32_rx(struct net_device *dev, int budget);
 static int pcnet32_tx(struct net_device *dev);
 static void pcnet32_rx_entry(struct net_device *dev, struct pcnet32_private *lp, struct pcnet32_rx_head *rxp, int entry);
 static int pcnet32_alloc_ring(struct net_device *dev, const char *name);
-static void pcnet32_watchdog(struct net_device *dev) ;
+static void pcnet32_watchdog(struct net_device *dev);
 
 /* table to translate option values from tulip to internal options */
-static const unsigned char options_mapping[] =
-{ //
-	PCNET32_PORT_ASEL, /* 0 Auto-select */
-	PCNET32_PORT_AUI, /* 1 BNC/AUI */
-	PCNET32_PORT_AUI, /* 2 AUI/BNC */
-	PCNET32_PORT_ASEL, /* 3 not supported */
-	PCNET32_PORT_10BT | PCNET32_PORT_FD, /* 4 10baseT-FD */
-	PCNET32_PORT_ASEL, /* 5 not supported */
-	PCNET32_PORT_ASEL, /* 6 not supported */
-	PCNET32_PORT_ASEL, /* 7 not supported */
-	PCNET32_PORT_ASEL, /* 8 not supported */
-	PCNET32_PORT_MII, /* 9 MII 10baseT */
-	PCNET32_PORT_MII | PCNET32_PORT_FD, /* 10 MII 10baseT-FD */
-	PCNET32_PORT_MII, /* 11 MII (autosel) */
-	PCNET32_PORT_10BT, /* 12 10BaseT */
-	PCNET32_PORT_MII | PCNET32_PORT_100, /* 13 MII 100BaseTx */
-	PCNET32_PORT_MII | PCNET32_PORT_100 | PCNET32_PORT_FD, /* 14 MII 100BaseTx-FD */
-	PCNET32_PORT_ASEL /* 15 not supported */
-	};
-
-int pcnet32_probe_pci(struct pci_dev *pdev, const struct pci_device_id *ent) {
-	unsigned long ioaddr;
-
-	pci_enable_device(pdev);
-
-	pci_set_master(pdev);
-
-	ioaddr = pci_resource_start(pdev, 0);
-
-	pci_set_dma_mask(pdev, PCNET32_DMA_MASK);
-
-	request_region(ioaddr, PCNET32_TOTAL_SIZE, "pcnet32_probe_pci");
-
-	return pcnet32_probe1(ioaddr, 1, pdev);
-}
+static const unsigned char options_mapping[] = { //
+			PCNET32_PORT_ASEL, /* 0 Auto-select */
+			PCNET32_PORT_AUI, /* 1 BNC/AUI */
+			PCNET32_PORT_AUI, /* 2 AUI/BNC */
+			PCNET32_PORT_ASEL, /* 3 not supported */
+			PCNET32_PORT_10BT | PCNET32_PORT_FD, /* 4 10baseT-FD */
+			PCNET32_PORT_ASEL, /* 5 not supported */
+			PCNET32_PORT_ASEL, /* 6 not supported */
+			PCNET32_PORT_ASEL, /* 7 not supported */
+			PCNET32_PORT_ASEL, /* 8 not supported */
+			PCNET32_PORT_MII, /* 9 MII 10baseT */
+			PCNET32_PORT_MII | PCNET32_PORT_FD, /* 10 MII 10baseT-FD */
+			PCNET32_PORT_MII, /* 11 MII (autosel) */
+			PCNET32_PORT_10BT, /* 12 10BaseT */
+			PCNET32_PORT_MII | PCNET32_PORT_100, /* 13 MII 100BaseTx */
+			PCNET32_PORT_MII | PCNET32_PORT_100 | PCNET32_PORT_FD, /* 14 MII 100BaseTx-FD */
+			PCNET32_PORT_ASEL /* 15 not supported */
+		};
 
 /* pcnet32_probe1
  *  Called from both pcnet32_probe_vlbus and pcnet_probe_pci.
  *  pdev will be NULL when called from pcnet32_probe_vlbus.
  */
-static int pcnet32_probe1(unsigned long ioaddr, int shared, struct pci_dev *pdev) {
+int pcnet32_probe1(unsigned long ioaddr, int shared, struct pci_dev *pdev) {
 	struct pcnet32_private *lp;
 	int i, media;
 	int fdx, mii, fset, dxsuflo, sram;
@@ -96,70 +86,70 @@ static int pcnet32_probe1(unsigned long ioaddr, int shared, struct pci_dev *pdev
 	chip_version = (chip_version >> 12) & 0xffff;
 
 	switch (chip_version) {
-		case 0x2420:
-			chipname = "PCnet/PCI 79C970"; /* PCI */
-			break;
-		case 0x2430:
-			if (shared)
-				chipname = "PCnet/PCI 79C970"; /* 970 gives the wrong chip id back */
-			else
-				chipname = "PCnet/32 79C965"; /* 486/VL bus */
-			break;
-		case 0x2621:
-			chipname = "PCnet/PCI II 79C970A"; /* PCI */
-			fdx = 1;
-			break;
-		case 0x2623:
-			chipname = "PCnet/FAST 79C971"; /* PCI */
-			fdx = 1;
-			mii = 1;
-			fset = 1;
-			break;
-		case 0x2624:
-			chipname = "PCnet/FAST+ 79C972"; /* PCI */
-			fdx = 1;
-			mii = 1;
-			fset = 1;
-			break;
-		case 0x2625:
-			chipname = "PCnet/FAST III 79C973"; /* PCI */
-			fdx = 1;
-			mii = 1;
-			sram = 1;
-			break;
-		case 0x2626:
-			chipname = "PCnet/Home 79C978"; /* PCI */
-			fdx = 1;
-			/*
-			 * This is based on specs published at www.amd.com.  This section
-			 * assumes that a card with a 79C978 wants to go into standard
-			 * ethernet mode.  The 79C978 can also go into 1Mb HomePNA mode,
-			 * and the module option homepna=1 can select this instead.
-			 */
-			media = a->read_bcr(ioaddr, 49);
-			media &= ~3; /* default to 10Mb ethernet */
-			if (cards_found < MAX_UNITS && homepna[cards_found])
-				media |= 1; /* switch to home wiring mode */
-			if (pcnet32_debug & NETIF_MSG_PROBE)
-			printk(KERN_DEBUG PFX "media set to %sMbit mode\n",
+	case 0x2420:
+		chipname = "PCnet/PCI 79C970"; /* PCI */
+		break;
+	case 0x2430:
+		if (shared)
+			chipname = "PCnet/PCI 79C970"; /* 970 gives the wrong chip id back */
+		else
+			chipname = "PCnet/32 79C965"; /* 486/VL bus */
+		break;
+	case 0x2621:
+		chipname = "PCnet/PCI II 79C970A"; /* PCI */
+		fdx = 1;
+		break;
+	case 0x2623:
+		chipname = "PCnet/FAST 79C971"; /* PCI */
+		fdx = 1;
+		mii = 1;
+		fset = 1;
+		break;
+	case 0x2624:
+		chipname = "PCnet/FAST+ 79C972"; /* PCI */
+		fdx = 1;
+		mii = 1;
+		fset = 1;
+		break;
+	case 0x2625:
+		chipname = "PCnet/FAST III 79C973"; /* PCI */
+		fdx = 1;
+		mii = 1;
+		sram = 1;
+		break;
+	case 0x2626:
+		chipname = "PCnet/Home 79C978"; /* PCI */
+		fdx = 1;
+		/*
+		 * This is based on specs published at www.amd.com.  This section
+		 * assumes that a card with a 79C978 wants to go into standard
+		 * ethernet mode.  The 79C978 can also go into 1Mb HomePNA mode,
+		 * and the module option homepna=1 can select this instead.
+		 */
+		media = a->read_bcr(ioaddr, 49);
+		media &= ~3; /* default to 10Mb ethernet */
+		if (cards_found < MAX_UNITS && homepna[cards_found])
+			media |= 1; /* switch to home wiring mode */
+		if (pcnet32_debug & NETIF_MSG_PROBE)
+		printk(KERN_DEBUG PFX "media set to %sMbit mode\n",
 				(media & 1) ? "1" : "10");
-			a->write_bcr(ioaddr, 49, media);
-			break;
-		case 0x2627:
-			chipname = "PCnet/FAST III 79C975"; /* PCI */
-			fdx = 1;
-			mii = 1;
-			sram = 1;
-			break;
-		case 0x2628:
-			chipname = "PCnet/PRO 79C976";
-			fdx = 1;
-			mii = 1;
-			break;
-		default:
-			if (pcnet32_debug & NETIF_MSG_PROBE)
-				pr_info("PCnet version %#x, no PCnet32 chip\n", chip_version);
-			goto err_release_region;
+		a->write_bcr(ioaddr, 49, media);
+		break;
+	case 0x2627:
+		chipname = "PCnet/FAST III 79C975"; /* PCI */
+		fdx = 1;
+		mii = 1;
+		sram = 1;
+		break;
+	case 0x2628:
+		chipname = "PCnet/PRO 79C976";
+		fdx = 1;
+		mii = 1;
+		break;
+	default:
+		if (pcnet32_debug & NETIF_MSG_PROBE)
+			pr_info("PCnet version %#x, no PCnet32 chip\n", chip_version);
+		goto err_release_region;
 	}
 
 	/*
@@ -254,18 +244,18 @@ static int pcnet32_probe1(unsigned long ioaddr, int shared, struct pci_dev *pdev
 			i = a->read_csr(ioaddr, 80) & 0x0C00; /* Check tx_start_pt */
 			pr_info("    tx_start_pt(0x%04x):", i);
 			switch (i >> 10) {
-				case 0:
-					pr_cont("  20 bytes,");
-					break;
-				case 1:
-					pr_cont("  64 bytes,");
-					break;
-				case 2:
-					pr_cont(" 128 bytes,");
-					break;
-				case 3:
-					pr_cont("~220 bytes,");
-					break;
+			case 0:
+				pr_cont("  20 bytes,");
+				break;
+			case 1:
+				pr_cont("  64 bytes,");
+				break;
+			case 2:
+				pr_cont(" 128 bytes,");
+				break;
+			case 3:
+				pr_cont("~220 bytes,");
+				break;
 			}
 			i = a->read_bcr(ioaddr, 18); /* Check Burst/Bus control */
 			pr_cont(" BCR18(%x):", i & 0xffff);
