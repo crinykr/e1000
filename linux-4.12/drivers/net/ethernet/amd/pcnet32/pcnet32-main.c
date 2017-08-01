@@ -35,7 +35,10 @@ static void __exit pcnet32_cleanup_module(void)
 {
 	struct net_device *next_dev;
 
+	printk("### pcnet32_cleanup_module-1(%s)\n", __TIME__);
+
 	while (pcnet32_dev) {
+		printk("### pcnet32_cleanup_module-2(%s)\n", __TIME__);
 		struct pcnet32_private *lp = netdev_priv(pcnet32_dev);
 		next_dev = lp->next;
 		unregister_netdev(pcnet32_dev);

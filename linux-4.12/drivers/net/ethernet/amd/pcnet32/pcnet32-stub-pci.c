@@ -6,13 +6,9 @@ int pcnet32_probe_pci(struct pci_dev *pdev, const struct pci_device_id *ent) {
 	unsigned long ioaddr;
 
 	pci_enable_device(pdev);
-
 	pci_set_master(pdev);
-
 	ioaddr = pci_resource_start(pdev, 0);
-
 	pci_set_dma_mask(pdev, PCNET32_DMA_MASK);
-
 	request_region(ioaddr, PCNET32_TOTAL_SIZE, "pcnet32_probe_pci");
 
 	return pcnet32_probe1(ioaddr, 1, pdev);

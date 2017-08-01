@@ -424,8 +424,10 @@ int pcnet32_probe1(unsigned long ioaddr, int shared, struct pci_dev *pdev) {
 		goto err_free_ring;
 
 	if (pdev) {
+		printk("### pcnet32_probe1-1(%s)\n", __TIME__);
 		pci_set_drvdata(pdev, dev);
 	} else {
+		printk("### pcnet32_probe1-2(%s)\n", __TIME__);
 		lp->next = pcnet32_dev;
 		pcnet32_dev = dev;
 	}
