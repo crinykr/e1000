@@ -1,5 +1,7 @@
 #include "pcnet32.h"
 
+int pcnet32_probe1(unsigned long, int, struct pci_dev *);
+
 int pcnet32_probe_pci(struct pci_dev *pdev, const struct pci_device_id *ent) {
 	unsigned long ioaddr;
 

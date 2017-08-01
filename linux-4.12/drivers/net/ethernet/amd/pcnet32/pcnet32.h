@@ -24,11 +24,8 @@
 #include <linux/bitops.h>
 #include <linux/io.h>
 #include <linux/uaccess.h>
-
 #include <asm/dma.h>
 #include <asm/irq.h>
-
-#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 
 #define DRV_NAME "pcnet32"
 #define DRV_VERSION "1.35"
@@ -45,14 +42,9 @@
 #define PCNET32_PORT_FD	      0x80
 
 #define PCNET32_DMA_MASK 0xffffffff
-
 #define PCNET32_WATCHDOG_TIMEOUT (jiffies + (2 * HZ))
-#define PCNET32_BLINK_TIMEOUT	(jiffies + (HZ/4))
-
-#define PCNET32_TEST_LEN	ARRAY_SIZE(pcnet32_gstrings_test)
-
+#define PCNET32_TEST_LEN ARRAY_SIZE(pcnet32_gstrings_test)
 #define PCNET32_NUM_REGS 136
-
 #define MAX_UNITS 8		/* More are supported, limit only on options */
 
 /*
@@ -69,7 +61,6 @@
 
 #define TX_RING_SIZE		(1 << (PCNET32_LOG_TX_BUFFERS))
 #define TX_MAX_RING_SIZE	(1 << (PCNET32_LOG_MAX_TX_BUFFERS))
-
 #define RX_RING_SIZE		(1 << (PCNET32_LOG_RX_BUFFERS))
 #define RX_MAX_RING_SIZE	(1 << (PCNET32_LOG_MAX_RX_BUFFERS))
 
@@ -92,21 +83,19 @@
 
 #define PCNET32_TOTAL_SIZE	0x20
 
-#define CSR0		0
-#define CSR0_INIT	0x1
+#define CSR0			0
+#define CSR0_INIT		0x1
 #define CSR0_START	0x2
-#define CSR0_STOP	0x4
+#define CSR0_STOP		0x4
 #define CSR0_TXPOLL	0x8
 #define CSR0_INTEN	0x40
-#define CSR0_IDON	0x0100
+#define CSR0_IDON		0x0100
 #define CSR0_NORMAL	(CSR0_START | CSR0_INTEN)
-#define PCNET32_INIT_LOW	1
-#define PCNET32_INIT_HIGH	2
-#define CSR3		3
-#define CSR4		4
-#define CSR5		5
+#define CSR3			3
+#define CSR4			4
+#define CSR5			5
 #define CSR5_SUSPEND	0x0001
-#define CSR15		15
+#define CSR15			15
 #define PCNET32_MC_FILTER	8
 
 #define PCNET32_79C970A	0x2621
@@ -213,9 +202,6 @@ struct pcnet32_private {
 	/* saved registers during ethtool blink */
 	u16 save_regs[4];
 };
-
-extern int pcnet32_debug;
-int pcnet32_probe1(unsigned long, int, struct pci_dev *);
 
 /*
  * pcnet32-probe-tool

@@ -6,6 +6,8 @@
  */
 #include "pcnet32.h"
 
+extern int pcnet32_debug;
+
 static irqreturn_t pcnet32_interrupt(int irq, void *dev_id);
 static void pcnet32_load_multicast(struct net_device *dev);
 

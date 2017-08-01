@@ -6,6 +6,8 @@ extern const struct net_device_ops pcnet32_netdev_ops;
 extern const struct pcnet32_access pcnet32_wio;
 extern const struct pcnet32_access pcnet32_dwio;
 
+extern int pcnet32_debug;
+
 int options[MAX_UNITS];
 int full_duplex[MAX_UNITS];
 int homepna[MAX_UNITS];
