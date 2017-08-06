@@ -42,8 +42,7 @@ static const unsigned char options_mapping[] = { //
 		};
 
 /* pcnet32_probe1
- *  Called from both pcnet32_probe_vlbus and pcnet_probe_pci.
- *  pdev will be NULL when called from pcnet32_probe_vlbus.
+ *  Called from pcnet_probe_pci.
  */
 int pcnet32_probe1(unsigned long ioaddr, int shared, struct pci_dev *pdev) {
 	struct pcnet32_private *lp;
@@ -123,8 +122,6 @@ int pcnet32_probe1(unsigned long ioaddr, int shared, struct pci_dev *pdev) {
 
 	lp->dev = dev;
 
-	// crinyhere
-
 	spin_lock_init(&lp->lock);
 
 	lp->name = chipname;
@@ -142,13 +139,9 @@ int pcnet32_probe1(unsigned long ioaddr, int shared, struct pci_dev *pdev) {
 	lp->mii = mii;
 	lp->chip_version = chip_version;
 	lp->msg_enable = pcnet32_debug;
-	if ((cards_found >= MAX_UNITS) || (options[cards_found] >= sizeof(options_mapping)))
-		lp->options = PCNET32_PORT_ASEL;
-	else
-		lp->options = options_mapping[options[cards_found]];
-	/* force default port to TP on 79C970A so link detection can work */
-	if (lp->chip_version == PCNET32_79C970A)
-		lp->options = PCNET32_PORT_10BT;
+	lp->options = options_mapping[options[cards_found]];
+	// crinyhere
+	lp->options = PCNET32_PORT_10BT; /* force default port to TP on 79C970A so link detection can work */
 	lp->mii_if.dev = dev;
 	lp->mii_if.mdio_read = mdio_read;
 	lp->mii_if.mdio_write = mdio_write;
@@ -157,6 +150,8 @@ int pcnet32_probe1(unsigned long ioaddr, int shared, struct pci_dev *pdev) {
 	lp->napi.weight = lp->rx_ring_size / 2;
 
 	netif_napi_add(dev, &lp->napi, pcnet32_poll, lp->rx_ring_size / 2);
+
+	// crinyhere
 
 	if (fdx && !(lp->options & PCNET32_PORT_ASEL) && ((cards_found >= MAX_UNITS) || full_duplex[cards_found]))
 		lp->options |= PCNET32_PORT_FD;
@@ -235,7 +230,6 @@ int pcnet32_probe1(unsigned long ioaddr, int shared, struct pci_dev *pdev) {
 		goto err_free_ring;
 
 	if (pdev) {
-		printk("### pcnet32_probe1-1(%s)\n", __TIME__);
 		pci_set_drvdata(pdev, dev);
 	}
 
