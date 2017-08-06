@@ -16,7 +16,6 @@
 
 extern struct pci_driver pcnet32_driver;
 extern int cards_found;
-extern struct net_device *pcnet32_dev;
 
 int pcnet32_debug;
 
@@ -36,19 +35,6 @@ static void __exit pcnet32_cleanup_module(void)
 	struct net_device *next_dev;
 
 	printk("### pcnet32_cleanup_module-1(%s)\n", __TIME__);
-
-	while (pcnet32_dev) {
-		printk("### pcnet32_cleanup_module-2(%s)\n", __TIME__);
-		struct pcnet32_private *lp = netdev_priv(pcnet32_dev);
-		next_dev = lp->next;
-		unregister_netdev(pcnet32_dev);
-		pcnet32_free_ring(pcnet32_dev);
-		release_region(pcnet32_dev->base_addr, PCNET32_TOTAL_SIZE);
-		pci_free_consistent(lp->pci_dev, sizeof(*lp->init_block),
-				lp->init_block, lp->init_dma_addr);
-		free_netdev(pcnet32_dev);
-		pcnet32_dev = next_dev;
-	}
 
 	pci_unregister_driver(&pcnet32_driver);
 }

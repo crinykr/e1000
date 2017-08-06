@@ -13,7 +13,6 @@ int full_duplex[MAX_UNITS];
 int homepna[MAX_UNITS];
 
 int cards_found;
-struct net_device *pcnet32_dev;
 
 static int pcnet32_poll(struct napi_struct *napi, int budget);
 static int pcnet32_rx(struct net_device *dev, int budget);
@@ -61,149 +60,25 @@ int pcnet32_probe1(unsigned long ioaddr, int shared, struct pci_dev *pdev) {
 	pcnet32_wio_reset(ioaddr);
 
 	/* NOTE: 16-bit check is first, otherwise some older PCnet chips fail */
-	if (pcnet32_wio_read_csr(ioaddr, 0) == 4 && pcnet32_wio_check(ioaddr)) {
+	if (pcnet32_wio_read_csr(ioaddr, 0) == 4 && pcnet32_wio_check(ioaddr))
 		a = &pcnet32_wio;
-	} else {
-		pcnet32_dwio_reset(ioaddr);
-		if (pcnet32_dwio_read_csr(ioaddr, 0) == 4 && pcnet32_dwio_check(ioaddr)) {
-			a = &pcnet32_dwio;
-		} else {
-			if (pcnet32_debug & NETIF_MSG_PROBE)
-				pr_err("No access methods\n");
-			goto err_release_region;
-		}
-	}
 
 	chip_version = a->read_csr(ioaddr, 88) | (a->read_csr(ioaddr, 89) << 16);
-	if ((pcnet32_debug & NETIF_MSG_PROBE) && (pcnet32_debug & NETIF_MSG_HW))
-		pr_info("  PCnet chip version is %#x\n", chip_version);
-	if ((chip_version & 0xfff) != 0x003) {
-		if (pcnet32_debug & NETIF_MSG_PROBE)
-			pr_info("Unsupported chip version\n");
-		goto err_release_region;
-	}
+	chip_version = (chip_version >> 12) & 0xffff;
 
 	/* initialize variables */
 	fdx = mii = fset = dxsuflo = sram = 0;
-	chip_version = (chip_version >> 12) & 0xffff;
 
-	switch (chip_version) {
-	case 0x2420:
-		chipname = "PCnet/PCI 79C970"; /* PCI */
-		break;
-	case 0x2430:
-		if (shared)
-			chipname = "PCnet/PCI 79C970"; /* 970 gives the wrong chip id back */
-		else
-			chipname = "PCnet/32 79C965"; /* 486/VL bus */
-		break;
-	case 0x2621:
+	if (chip_version == 0x2621) {
 		chipname = "PCnet/PCI II 79C970A"; /* PCI */
 		fdx = 1;
-		break;
-	case 0x2623:
-		chipname = "PCnet/FAST 79C971"; /* PCI */
-		fdx = 1;
-		mii = 1;
-		fset = 1;
-		break;
-	case 0x2624:
-		chipname = "PCnet/FAST+ 79C972"; /* PCI */
-		fdx = 1;
-		mii = 1;
-		fset = 1;
-		break;
-	case 0x2625:
-		chipname = "PCnet/FAST III 79C973"; /* PCI */
-		fdx = 1;
-		mii = 1;
-		sram = 1;
-		break;
-	case 0x2626:
-		chipname = "PCnet/Home 79C978"; /* PCI */
-		fdx = 1;
-		/*
-		 * This is based on specs published at www.amd.com.  This section
-		 * assumes that a card with a 79C978 wants to go into standard
-		 * ethernet mode.  The 79C978 can also go into 1Mb HomePNA mode,
-		 * and the module option homepna=1 can select this instead.
-		 */
-		media = a->read_bcr(ioaddr, 49);
-		media &= ~3; /* default to 10Mb ethernet */
-		if (cards_found < MAX_UNITS && homepna[cards_found])
-			media |= 1; /* switch to home wiring mode */
-		if (pcnet32_debug & NETIF_MSG_PROBE)
-		printk(KERN_DEBUG PFX "media set to %sMbit mode\n",
-				(media & 1) ? "1" : "10");
-		a->write_bcr(ioaddr, 49, media);
-		break;
-	case 0x2627:
-		chipname = "PCnet/FAST III 79C975"; /* PCI */
-		fdx = 1;
-		mii = 1;
-		sram = 1;
-		break;
-	case 0x2628:
-		chipname = "PCnet/PRO 79C976";
-		fdx = 1;
-		mii = 1;
-		break;
-	default:
-		if (pcnet32_debug & NETIF_MSG_PROBE)
-			pr_info("PCnet version %#x, no PCnet32 chip\n", chip_version);
-		goto err_release_region;
-	}
-
-	/*
-	 *  On selected chips turn on the BCR18:NOUFLO bit. This stops transmit
-	 *  starting until the packet is loaded. Strike one for reliability, lose
-	 *  one for latency - although on PCI this isn't a big loss. Older chips
-	 *  have FIFO's smaller than a packet, so you can't do this.
-	 *  Turn on BCR18:BurstRdEn and BCR18:BurstWrEn.
-	 */
-
-	if (fset) {
-		a->write_bcr(ioaddr, 18, (a->read_bcr(ioaddr, 18) | 0x0860));
-		a->write_csr(ioaddr, 80, (a->read_csr(ioaddr, 80) & 0x0C00) | 0x0c00);
-		dxsuflo = 1;
-	}
-
-	/*
-	 * The Am79C973/Am79C975 controllers come with 12K of SRAM
-	 * which we can use for the Tx/Rx buffers but most importantly,
-	 * the use of SRAM allow us to use the BCR18:NOUFLO bit to avoid
-	 * Tx fifo underflows.
-	 */
-	if (sram) {
-		/*
-		 * The SRAM is being configured in two steps. First we
-		 * set the SRAM size in the BCR25:SRAM_SIZE bits. According
-		 * to the datasheet, each bit corresponds to a 512-byte
-		 * page so we can have at most 24 pages. The SRAM_SIZE
-		 * holds the value of the upper 8 bits of the 16-bit SRAM size.
-		 * The low 8-bits start at 0x00 and end at 0xff. So the
-		 * address range is from 0x0000 up to 0x17ff. Therefore,
-		 * the SRAM_SIZE is set to 0x17. The next step is to set
-		 * the BCR26:SRAM_BND midway through so the Tx and Rx
-		 * buffers can share the SRAM equally.
-		 */
-		a->write_bcr(ioaddr, 25, 0x17);
-		a->write_bcr(ioaddr, 26, 0xc);
-		/* And finally enable the NOUFLO bit */
-		a->write_bcr(ioaddr, 18, a->read_bcr(ioaddr, 18) | (1 << 11));
 	}
 
 	dev = alloc_etherdev(sizeof(*lp));
-	if (!dev) {
-		ret = -ENOMEM;
-		goto err_release_region;
-	}
 
-	if (pdev)
-		SET_NETDEV_DEV(dev, &pdev->dev);
+	SET_NETDEV_DEV(dev, &pdev->dev);
 
-	if (pcnet32_debug & NETIF_MSG_PROBE)
-		pr_info("%s at %#3lx,", chipname, ioaddr);
+	pr_info("%s at %#3lx,", chipname, ioaddr);
 
 	/* In most chips, after a chip reset, the ethernet address is read from the
 	 * station address PROM at the base address and programmed into the
@@ -238,60 +113,17 @@ int pcnet32_probe1(unsigned long ioaddr, int shared, struct pci_dev *pdev) {
 	if (!is_valid_ether_addr(dev->dev_addr))
 		eth_zero_addr(dev->dev_addr);
 
-	if (pcnet32_debug & NETIF_MSG_PROBE) {
-		pr_cont(" %pM", dev->dev_addr);
-
-		/* Version 0x2623 and 0x2624 */
-		if (((chip_version + 1) & 0xfffe) == 0x2624) {
-			i = a->read_csr(ioaddr, 80) & 0x0C00; /* Check tx_start_pt */
-			pr_info("    tx_start_pt(0x%04x):", i);
-			switch (i >> 10) {
-			case 0:
-				pr_cont("  20 bytes,");
-				break;
-			case 1:
-				pr_cont("  64 bytes,");
-				break;
-			case 2:
-				pr_cont(" 128 bytes,");
-				break;
-			case 3:
-				pr_cont("~220 bytes,");
-				break;
-			}
-			i = a->read_bcr(ioaddr, 18); /* Check Burst/Bus control */
-			pr_cont(" BCR18(%x):", i & 0xffff);
-			if (i & (1 << 5))
-				pr_cont("BurstWrEn ");
-			if (i & (1 << 6))
-				pr_cont("BurstRdEn ");
-			if (i & (1 << 7))
-				pr_cont("DWordIO ");
-			if (i & (1 << 11))
-				pr_cont("NoUFlow ");
-			i = a->read_bcr(ioaddr, 25);
-			pr_info("    SRAMSIZE=0x%04x,", i << 8);
-			i = a->read_bcr(ioaddr, 26);
-			pr_cont(" SRAM_BND=0x%04x,", i << 8);
-			i = a->read_bcr(ioaddr, 27);
-			if (i & (1 << 14))
-				pr_cont("LowLatRx");
-		}
-	}
+	pr_cont(" %pM", dev->dev_addr);
 
 	dev->base_addr = ioaddr;
 	lp = netdev_priv(dev);
 	/* pci_alloc_consistent returns page-aligned memory, so we do not have to check the alignment */
 	lp->init_block = pci_alloc_consistent(pdev, sizeof(*lp->init_block), &lp->init_dma_addr);
-	if (!lp->init_block) {
-		if (pcnet32_debug & NETIF_MSG_PROBE)
-			pr_err("Consistent memory allocation failed\n");
-		ret = -ENOMEM;
-		goto err_free_netdev;
-	}
 	lp->pci_dev = pdev;
 
 	lp->dev = dev;
+
+	// crinyhere
 
 	spin_lock_init(&lp->lock);
 
@@ -359,27 +191,6 @@ int pcnet32_probe1(unsigned long ioaddr, int shared, struct pci_dev *pdev) {
 		dev->irq = pdev->irq;
 		if (pcnet32_debug & NETIF_MSG_PROBE)
 			pr_cont(" assigned IRQ %d\n", dev->irq);
-	} else {
-		unsigned long irq_mask = probe_irq_on();
-
-		/*
-		 * To auto-IRQ we enable the initialization-done and DMA error
-		 * interrupts. For ISA boards we get a DMA error, but VLB and PCI
-		 * boards will work.
-		 */
-		/* Trigger an initialization just for the interrupt. */
-		a->write_csr(ioaddr, CSR0, CSR0_INTEN | CSR0_INIT);
-		mdelay(1);
-
-		dev->irq = probe_irq_off(irq_mask);
-		if (!dev->irq) {
-			if (pcnet32_debug & NETIF_MSG_PROBE)
-				pr_cont(", failed to detect IRQ line\n");
-			ret = -ENODEV;
-			goto err_free_ring;
-		}
-		if (pcnet32_debug & NETIF_MSG_PROBE)
-			pr_cont(", probed IRQ %d\n", dev->irq);
 	}
 
 	/* Set the mii phy_id so that we can query the link state */
@@ -426,10 +237,6 @@ int pcnet32_probe1(unsigned long ioaddr, int shared, struct pci_dev *pdev) {
 	if (pdev) {
 		printk("### pcnet32_probe1-1(%s)\n", __TIME__);
 		pci_set_drvdata(pdev, dev);
-	} else {
-		printk("### pcnet32_probe1-2(%s)\n", __TIME__);
-		lp->next = pcnet32_dev;
-		pcnet32_dev = dev;
 	}
 
 	if (pcnet32_debug & NETIF_MSG_PROBE)
