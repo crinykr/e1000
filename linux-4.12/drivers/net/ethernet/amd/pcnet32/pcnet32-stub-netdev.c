@@ -6,8 +6,6 @@
  */
 #include "pcnet32.h"
 
-extern int pcnet32_debug;
-
 static irqreturn_t pcnet32_interrupt(int irq, void *dev_id);
 static void pcnet32_load_multicast(struct net_device *dev);
 
@@ -323,8 +321,8 @@ static void pcnet32_tx_timeout(struct net_device *dev) {
 
 	spin_lock_irqsave(&lp->lock, flags);
 	/* Transmitter timeout, serious problems. */
-	if (pcnet32_debug & NETIF_MSG_DRV)
-		pr_err("%s: transmit timed out, status %4.4x, resetting\n", dev->name, lp->a->read_csr(ioaddr, CSR0));
+	//if (pcnet32_debug & NETIF_MSG_DRV)
+	pr_err("%s: transmit timed out, status %4.4x, resetting\n", dev->name, lp->a->read_csr(ioaddr, CSR0));
 	lp->a->write_csr(ioaddr, CSR0, CSR0_STOP);
 	dev->stats.tx_errors++;
 	if (netif_msg_tx_err(lp)) {

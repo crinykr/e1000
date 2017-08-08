@@ -8,38 +8,12 @@ extern const struct pcnet32_access pcnet32_dwio;
 
 extern int pcnet32_debug;
 
-int options[MAX_UNITS];
-int full_duplex[MAX_UNITS];
-int homepna[MAX_UNITS];
-
-int cards_found;
-
 static int pcnet32_poll(struct napi_struct *napi, int budget);
 static int pcnet32_rx(struct net_device *dev, int budget);
 static int pcnet32_tx(struct net_device *dev);
 static void pcnet32_rx_entry(struct net_device *dev, struct pcnet32_private *lp, struct pcnet32_rx_head *rxp, int entry);
 static int pcnet32_alloc_ring(struct net_device *dev, const char *name);
 static void pcnet32_watchdog(struct net_device *dev);
-
-/* table to translate option values from tulip to internal options */
-static const unsigned char options_mapping[] = { //
-			PCNET32_PORT_ASEL, /* 0 Auto-select */
-			PCNET32_PORT_AUI, /* 1 BNC/AUI */
-			PCNET32_PORT_AUI, /* 2 AUI/BNC */
-			PCNET32_PORT_ASEL, /* 3 not supported */
-			PCNET32_PORT_10BT | PCNET32_PORT_FD, /* 4 10baseT-FD */
-			PCNET32_PORT_ASEL, /* 5 not supported */
-			PCNET32_PORT_ASEL, /* 6 not supported */
-			PCNET32_PORT_ASEL, /* 7 not supported */
-			PCNET32_PORT_ASEL, /* 8 not supported */
-			PCNET32_PORT_MII, /* 9 MII 10baseT */
-			PCNET32_PORT_MII | PCNET32_PORT_FD, /* 10 MII 10baseT-FD */
-			PCNET32_PORT_MII, /* 11 MII (autosel) */
-			PCNET32_PORT_10BT, /* 12 10BaseT */
-			PCNET32_PORT_MII | PCNET32_PORT_100, /* 13 MII 100BaseTx */
-			PCNET32_PORT_MII | PCNET32_PORT_100 | PCNET32_PORT_FD, /* 14 MII 100BaseTx-FD */
-			PCNET32_PORT_ASEL /* 15 not supported */
-		};
 
 /* pcnet32_probe1
  *  Called from pcnet_probe_pci.
@@ -100,10 +74,8 @@ int pcnet32_probe1(unsigned long ioaddr, int shared, struct pci_dev *pdev) {
 
 	if (!ether_addr_equal(promaddr, dev->dev_addr) || !is_valid_ether_addr(dev->dev_addr)) {
 		if (is_valid_ether_addr(promaddr)) {
-			if (pcnet32_debug & NETIF_MSG_PROBE) {
-				pr_cont(" warning: CSR address invalid,\n");
-				pr_info("    using instead PROM address of");
-			}
+			pr_cont(" warning: CSR address invalid,\n");
+			pr_info("    using instead PROM address of");
 			memcpy(dev->dev_addr, promaddr, ETH_ALEN);
 		}
 	}
@@ -139,8 +111,6 @@ int pcnet32_probe1(unsigned long ioaddr, int shared, struct pci_dev *pdev) {
 	lp->mii = mii;
 	lp->chip_version = chip_version;
 	lp->msg_enable = pcnet32_debug;
-	lp->options = options_mapping[options[cards_found]];
-	// crinyhere
 	lp->options = PCNET32_PORT_10BT; /* force default port to TP on 79C970A so link detection can work */
 	lp->mii_if.dev = dev;
 	lp->mii_if.mdio_read = mdio_read;
@@ -151,18 +121,11 @@ int pcnet32_probe1(unsigned long ioaddr, int shared, struct pci_dev *pdev) {
 
 	netif_napi_add(dev, &lp->napi, pcnet32_poll, lp->rx_ring_size / 2);
 
-	// crinyhere
-
-	if (fdx && !(lp->options & PCNET32_PORT_ASEL) && ((cards_found >= MAX_UNITS) || full_duplex[cards_found]))
-		lp->options |= PCNET32_PORT_FD;
-
 	lp->a = a;
 
 	/* prior to register_netdev, dev->name is not yet correct */
-	if (pcnet32_alloc_ring(dev, pci_name(lp->pci_dev))) {
-		ret = -ENOMEM;
-		goto err_free_ring;
-	}
+	pcnet32_alloc_ring(dev, pci_name(lp->pci_dev));
+
 	/* detect special T1/E1 WAN card by checking for MAC address */
 	if (dev->dev_addr[0] == 0x00 && dev->dev_addr[1] == 0xe0 && dev->dev_addr[2] == 0x75)
 		lp->options = PCNET32_PORT_FD | PCNET32_PORT_GPSI;
@@ -182,39 +145,9 @@ int pcnet32_probe1(unsigned long ioaddr, int shared, struct pci_dev *pdev) {
 	a->write_csr(ioaddr, 1, (lp->init_dma_addr & 0xffff));
 	a->write_csr(ioaddr, 2, (lp->init_dma_addr >> 16));
 
-	if (pdev) { /* use the IRQ provided by PCI */
-		dev->irq = pdev->irq;
-		if (pcnet32_debug & NETIF_MSG_PROBE)
-			pr_cont(" assigned IRQ %d\n", dev->irq);
-	}
-
-	/* Set the mii phy_id so that we can query the link state */
-	if (lp->mii) {
-		/* lp->phycount and lp->phymask are set to 0 by memset above */
-
-		lp->mii_if.phy_id = ((lp->a->read_bcr(ioaddr, 33)) >> 5) & 0x1f;
-		/* scan for PHYs */
-		for (i = 0; i < PCNET32_MAX_PHYS; i++) {
-			unsigned short id1, id2;
-
-			id1 = mdio_read(dev, i, MII_PHYSID1);
-			if (id1 == 0xffff)
-				continue;
-			id2 = mdio_read(dev, i, MII_PHYSID2);
-			if (id2 == 0xffff)
-				continue;
-			if (i == 31 && ((chip_version + 1) & 0xfffe) == 0x2624)
-				continue; /* 79C971 & 79C972 have phantom phy at id 31 */
-			lp->phycount++;
-			lp->phymask |= (1 << i);
-			lp->mii_if.phy_id = i;
-			if (pcnet32_debug & NETIF_MSG_PROBE)
-				pr_info("Found PHY %04x:%04x at address %d\n", id1, id2, i);
-		}
-		lp->a->write_bcr(ioaddr, 33, (lp->mii_if.phy_id) << 5);
-		if (lp->phycount > 1)
-			lp->options |= PCNET32_PORT_MII;
-	}
+	/* use the IRQ provided by PCI */
+	dev->irq = pdev->irq;
+	pr_cont(" assigned IRQ %d\n", dev->irq);
 
 	init_timer(&lp->watchdog_timer);
 	lp->watchdog_timer.data = (unsigned long) dev;
@@ -226,27 +159,16 @@ int pcnet32_probe1(unsigned long ioaddr, int shared, struct pci_dev *pdev) {
 	dev->watchdog_timeo = (5 * HZ);
 
 	/* Fill in the generic fields of the device structure. */
-	if (register_netdev(dev))
-		goto err_free_ring;
+	register_netdev(dev);
 
-	if (pdev) {
-		pci_set_drvdata(pdev, dev);
-	}
+	pci_set_drvdata(pdev, dev);
 
-	if (pcnet32_debug & NETIF_MSG_PROBE)
-		pr_info("%s: registered as %s\n", dev->name, lp->name);
-	cards_found++;
+	pr_info("%s: registered as %s\n", dev->name, lp->name);
 
 	/* enable LED writes */
 	a->write_bcr(ioaddr, 2, a->read_bcr(ioaddr, 2) | 0x1000);
 
 	return 0;
-
-	err_free_ring: pcnet32_free_ring(dev);
-	pci_free_consistent(lp->pci_dev, sizeof(*lp->init_block), lp->init_block, lp->init_dma_addr);
-	err_free_netdev: free_netdev(dev);
-	err_release_region: release_region(ioaddr, PCNET32_TOTAL_SIZE);
-	return ret;
 }
 
 static int pcnet32_poll(struct napi_struct *napi, int budget) {

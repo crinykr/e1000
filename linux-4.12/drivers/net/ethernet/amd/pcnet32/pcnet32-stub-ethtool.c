@@ -10,7 +10,7 @@ static int pcnet32_loopback_test(struct net_device *dev, uint64_t * data1);
 static void pcnet32_netif_stop(struct net_device *dev);
 static void pcnet32_netif_start(struct net_device *dev);
 static void pcnet32_realloc_tx_ring(struct net_device *dev, struct pcnet32_private *lp, unsigned int size);
-static void pcnet32_realloc_rx_ring(struct net_device *dev, struct pcnet32_private *lp, unsigned int size) ;
+static void pcnet32_realloc_rx_ring(struct net_device *dev, struct pcnet32_private *lp, unsigned int size);
 
 static const char pcnet32_gstrings_test[][ETH_GSTRING_LEN] = {
 	"Loopback test  (offline)" };

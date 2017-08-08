@@ -15,27 +15,20 @@
 #include "pcnet32.h"
 
 extern struct pci_driver pcnet32_driver;
-extern int cards_found;
 
 int pcnet32_debug;
 
 static int __init pcnet32_init_module(void)
 {
-	printk("### pcnet32_init_module(%s)\n", __TIME__);
-
 	pcnet32_debug = netif_msg_init(-1, PCNET32_MSG_DEFAULT); // debug level : -1
 
 	pci_register_driver(&pcnet32_driver);
 
-	return cards_found ? 0 : -ENODEV;
+	return 0;
 }
 
 static void __exit pcnet32_cleanup_module(void)
 {
-	struct net_device *next_dev;
-
-	printk("### pcnet32_cleanup_module-1(%s)\n", __TIME__);
-
 	pci_unregister_driver(&pcnet32_driver);
 }
 
