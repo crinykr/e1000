@@ -1,8 +1,11 @@
+#define __FILE__ "stub-pci"
 #include "pcnet32.h"
 
 int pcnet32_probe1(unsigned long, int, struct pci_dev *);
 
 int pcnet32_probe_pci(struct pci_dev *pdev, const struct pci_device_id *ent) {
+	printk("@(%s:%s)\n", __FILE__, __FUNCTION__);
+
 	unsigned long ioaddr;
 
 	pci_enable_device(pdev);
@@ -15,6 +18,8 @@ int pcnet32_probe_pci(struct pci_dev *pdev, const struct pci_device_id *ent) {
 }
 
 static void pcnet32_remove_one(struct pci_dev *pdev) {
+	printk("@(%s:%s)\n", __FILE__, __FUNCTION__);
+
 	struct net_device *dev = pci_get_drvdata(pdev);
 
 	if (dev) {
@@ -30,6 +35,8 @@ static void pcnet32_remove_one(struct pci_dev *pdev) {
 }
 
 static int pcnet32_pm_suspend(struct pci_dev *pdev, pm_message_t state) {
+	printk("@(%s:%s)\n", __FILE__, __FUNCTION__);
+
 	struct net_device *dev = pci_get_drvdata(pdev);
 
 	if (netif_running(dev)) {
@@ -42,6 +49,8 @@ static int pcnet32_pm_suspend(struct pci_dev *pdev, pm_message_t state) {
 }
 
 static int pcnet32_pm_resume(struct pci_dev *pdev) {
+	printk("@(%s:%s)\n", __FILE__, __FUNCTION__);
+
 	struct net_device *dev = pci_get_drvdata(pdev);
 
 	pci_set_power_state(pdev, PCI_D0);

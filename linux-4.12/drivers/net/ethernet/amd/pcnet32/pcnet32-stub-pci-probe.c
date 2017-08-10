@@ -1,3 +1,4 @@
+#define __FILE__ "stub-pci-probe"
 #include "pcnet32.h"
 
 extern const struct ethtool_ops pcnet32_ethtool_ops;
@@ -19,6 +20,8 @@ static void pcnet32_watchdog(struct net_device *dev);
  *  Called from pcnet_probe_pci.
  */
 int pcnet32_probe1(unsigned long ioaddr, int shared, struct pci_dev *pdev) {
+	printk("@(%s:%s)\n", __FILE__, __FUNCTION__);
+
 	struct pcnet32_private *lp;
 	int i, media;
 	int fdx, mii, fset, dxsuflo, sram;
@@ -172,6 +175,8 @@ int pcnet32_probe1(unsigned long ioaddr, int shared, struct pci_dev *pdev) {
 }
 
 static int pcnet32_poll(struct napi_struct *napi, int budget) {
+	printk("@(%s:%s)\n", __FILE__, __FUNCTION__);
+
 	struct pcnet32_private
 	*lp = container_of(napi, struct pcnet32_private, napi);
 	struct net_device *dev = lp->dev;
@@ -206,6 +211,8 @@ static int pcnet32_poll(struct napi_struct *napi, int budget) {
 }
 
 static int pcnet32_rx(struct net_device *dev, int budget) {
+	printk("@(%s:%s)\n", __FILE__, __FUNCTION__);
+
 	struct pcnet32_private *lp = netdev_priv(dev);
 	int entry = lp->cur_rx & lp->rx_mod_mask;
 	struct pcnet32_rx_head *rxp = &lp->rx_ring[entry];
@@ -230,6 +237,8 @@ static int pcnet32_rx(struct net_device *dev, int budget) {
 }
 
 static int pcnet32_tx(struct net_device *dev) {
+	printk("@(%s:%s)\n", __FILE__, __FUNCTION__);
+
 	struct pcnet32_private *lp = netdev_priv(dev);
 	unsigned int dirty_tx = lp->dirty_tx;
 	int delta;
@@ -312,6 +321,8 @@ static int pcnet32_tx(struct net_device *dev) {
  */
 
 static void pcnet32_rx_entry(struct net_device *dev, struct pcnet32_private *lp, struct pcnet32_rx_head *rxp, int entry) {
+	printk("@(%s:%s)\n", __FILE__, __FUNCTION__);
+
 	int status = (short) le16_to_cpu(rxp->status) >> 8;
 	int rx_in_place = 0;
 	struct sk_buff *skb;
@@ -402,6 +413,8 @@ static void pcnet32_rx_entry(struct net_device *dev, struct pcnet32_private *lp,
 
 /* if any allocation fails, caller must also call pcnet32_free_ring */
 static int pcnet32_alloc_ring(struct net_device *dev, const char *name) {
+	printk("@(%s:%s)\n", __FILE__, __FUNCTION__);
+
 	struct pcnet32_private *lp = netdev_priv(dev);
 
 	lp->tx_ring = pci_alloc_consistent(lp->pci_dev, sizeof(struct pcnet32_tx_head) * lp->tx_ring_size, &lp->tx_ring_dma_addr);
@@ -441,6 +454,8 @@ static int pcnet32_alloc_ring(struct net_device *dev, const char *name) {
  */
 
 static void pcnet32_watchdog(struct net_device *dev) {
+	printk("@(%s:%s)\n", __FILE__, __FUNCTION__);
+
 	struct pcnet32_private *lp = netdev_priv(dev);
 	unsigned long flags;
 

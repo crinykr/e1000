@@ -11,7 +11,7 @@
  * Kernel driver in use: pcnet32
  * Kernel modules: pcnet32
  */
-
+#define __FILE__ "main"
 #include "pcnet32.h"
 
 extern struct pci_driver pcnet32_driver;
@@ -20,8 +20,9 @@ int pcnet32_debug;
 
 static int __init pcnet32_init_module(void)
 {
-	pcnet32_debug = netif_msg_init(-1, PCNET32_MSG_DEFAULT); // debug level : -1
+	printk("@(%s:%s)\n", __FILE__, __FUNCTION__);
 
+	pcnet32_debug = netif_msg_init(-1, PCNET32_MSG_DEFAULT); // debug level : -1
 	pci_register_driver(&pcnet32_driver);
 
 	return 0;
@@ -29,6 +30,8 @@ static int __init pcnet32_init_module(void)
 
 static void __exit pcnet32_cleanup_module(void)
 {
+	printk("@(%s:%s)\n", __FILE__, __FUNCTION__);
+
 	pci_unregister_driver(&pcnet32_driver);
 }
 
