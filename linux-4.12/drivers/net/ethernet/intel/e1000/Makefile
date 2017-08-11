@@ -32,4 +32,4 @@
 
 obj-$(CONFIG_E1000) += e1000.o
 
-e1000-objs := e1000_main.o e1000_hw.o e1000_ethtool.o e1000_param.o dummy.o e1000_main_probe.o e1000_main_remove.o e1000_main_shutdown.o e1000_main_suspend.o e1000_main_resume.o
+e1000-objs := e1000_main.o e1000_hw.o e1000_ethtool.o e1000_param.o

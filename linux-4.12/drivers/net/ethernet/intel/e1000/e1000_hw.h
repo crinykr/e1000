@@ -414,7 +414,7 @@ void e1000_io_write(struct e1000_hw *hw, unsigned long port, u32 value);
 #define E1000_DEV_ID_82544EI_FIBER       0x1009
 #define E1000_DEV_ID_82544GC_COPPER      0x100C
 #define E1000_DEV_ID_82544GC_LOM         0x100D
-#define E1000_DEV_ID_82540EM             0x100E // <- target device
+#define E1000_DEV_ID_82540EM             0x100E
 #define E1000_DEV_ID_82540EM_LOM         0x1015
 #define E1000_DEV_ID_82540EP_LOM         0x1016
 #define E1000_DEV_ID_82540EP             0x1017
