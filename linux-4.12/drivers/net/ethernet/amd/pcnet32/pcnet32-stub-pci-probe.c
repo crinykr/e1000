@@ -454,7 +454,7 @@ static int pcnet32_alloc_ring(struct net_device *dev, const char *name) {
  */
 
 static void pcnet32_watchdog(struct net_device *dev) {
-	printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
+	//printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
 
 	struct pcnet32_private *lp = netdev_priv(dev);
 	unsigned long flags;

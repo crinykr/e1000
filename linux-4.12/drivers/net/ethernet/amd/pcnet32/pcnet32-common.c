@@ -159,28 +159,24 @@ void pcnet32_free_ring(struct net_device *dev) {
  */
 
 void pcnet32_check_media(struct net_device *dev, int verbose) {
-	printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
+	//printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
 
 	struct pcnet32_private *lp = netdev_priv(dev);
 	int curr_link;
 	int prev_link = netif_carrier_ok(dev) ? 1 : 0;
 	u32 bcr9;
 
-	if (lp->mii) {
-		curr_link = mii_link_ok(&lp->mii_if);
-	} else if (lp->chip_version == PCNET32_79C970A) {
-		ulong ioaddr = dev->base_addr; /* card base I/O address */
-		/* only read link if port is set to TP */
-		if (!lp->autoneg && lp->port_tp)
-			curr_link = (lp->a->read_bcr(ioaddr, 4) != 0xc0);
-		else
-			/* link always up for AUI port or port auto select */
-			curr_link = 1;
-	} else {
-		ulong ioaddr = dev->base_addr; /* card base I/O address */
+	ulong ioaddr = dev->base_addr; /* card base I/O address */
+	/* only read link if port is set to TP */
+	if (!lp->autoneg && lp->port_tp) {
 		curr_link = (lp->a->read_bcr(ioaddr, 4) != 0xc0);
+	} else {
+		/* link always up for AUI port or port auto select */
+		curr_link = 1;
 	}
+
 	if (!curr_link) {
+		printk("!!! [%s:%d] - (%s:%s) - check 1\n", current->comm, current->pid, __FILE__, __FUNCTION__);
 		if (prev_link || verbose) {
 			netif_carrier_off(dev);
 			netif_info(lp, link, dev, "link down\n");
@@ -190,25 +186,9 @@ void pcnet32_check_media(struct net_device *dev, int verbose) {
 			prev_link = 0;
 		}
 	} else if (verbose || !prev_link) {
+		printk("!!! [%s:%d] - (%s:%s) - check 2\n", current->comm, current->pid, __FILE__, __FUNCTION__);
 		netif_carrier_on(dev);
-		if (lp->mii) {
-			if (netif_msg_link(lp)) {
-				struct ethtool_cmd ecmd = {
-					.cmd = ETHTOOL_GSET };
-				mii_ethtool_gset(&lp->mii_if, &ecmd);
-				netdev_info(dev, "link up, %uMbps, %s-duplex\n", ethtool_cmd_speed(&ecmd), (ecmd.duplex == DUPLEX_FULL) ? "full" : "half");
-			}
-			bcr9 = lp->a->read_bcr(dev->base_addr, 9);
-			if ((bcr9 & (1 << 0)) != lp->mii_if.full_duplex) {
-				if (lp->mii_if.full_duplex)
-					bcr9 |= (1 << 0);
-				else
-					bcr9 &= ~(1 << 0);
-				lp->a->write_bcr(dev->base_addr, 9, bcr9);
-			}
-		} else {
-			netif_info(lp, link, dev, "link up\n");
-		}
+		netif_info(lp, link, dev, "link up\n");
 	}
 }
 

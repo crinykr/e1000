@@ -288,9 +288,7 @@ static netdev_tx_t pcnet32_start_xmit(struct sk_buff *skb, struct net_device *de
 	 * with the "ownership" bits last. */
 
 	lp->tx_ring[entry].length = cpu_to_le16(-skb->len);
-
 	lp->tx_ring[entry].misc = 0x00000000;
-
 	lp->tx_dma_addr[entry] = pci_map_single(lp->pci_dev, skb->data, skb->len, PCI_DMA_TODEVICE);
 	if (pci_dma_mapping_error(lp->pci_dev, lp->tx_dma_addr[entry])) {
 		dev_kfree_skb_any(skb);
@@ -301,8 +299,8 @@ static netdev_tx_t pcnet32_start_xmit(struct sk_buff *skb, struct net_device *de
 	lp->tx_ring[entry].base = cpu_to_le32(lp->tx_dma_addr[entry]);
 	wmb(); /* Make sure owner changes after all others are visible */
 	lp->tx_ring[entry].status = cpu_to_le16(status);
-
 	lp->cur_tx++;
+
 	dev->stats.tx_bytes += skb->len;
 
 	/* Trigger an immediate send poll. */
