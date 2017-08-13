@@ -5,7 +5,7 @@ static irqreturn_t pcnet32_interrupt(int irq, void *dev_id);
 static void pcnet32_load_multicast(struct net_device *dev);
 
 int pcnet32_open(struct net_device *dev) {
-	printk("@(%s:%s)\n", __FILE__, __FUNCTION__);
+	printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
 
 	struct pcnet32_private *lp = netdev_priv(dev);
 	struct pci_dev *pdev = lp->pci_dev;
@@ -221,7 +221,7 @@ int pcnet32_open(struct net_device *dev) {
 }
 
 int pcnet32_close(struct net_device *dev) {
-	printk("@(%s:%s)\n", __FILE__, __FUNCTION__);
+	printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
 
 	unsigned long ioaddr = dev->base_addr;
 	struct pcnet32_private *lp = netdev_priv(dev);
@@ -262,7 +262,7 @@ int pcnet32_close(struct net_device *dev) {
 }
 
 static netdev_tx_t pcnet32_start_xmit(struct sk_buff *skb, struct net_device *dev) {
-	printk("@(%s:%s)\n", __FILE__, __FUNCTION__);
+	printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
 
 	struct pcnet32_private *lp = netdev_priv(dev);
 	unsigned long ioaddr = dev->base_addr;
@@ -317,7 +317,7 @@ static netdev_tx_t pcnet32_start_xmit(struct sk_buff *skb, struct net_device *de
 }
 
 static void pcnet32_tx_timeout(struct net_device *dev) {
-	printk("@(%s:%s)\n", __FILE__, __FUNCTION__);
+	printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
 
 	struct pcnet32_private *lp = netdev_priv(dev);
 	unsigned long ioaddr = dev->base_addr, flags;
@@ -351,7 +351,7 @@ static void pcnet32_tx_timeout(struct net_device *dev) {
 }
 
 static struct net_device_stats *pcnet32_get_stats(struct net_device *dev) {
-	printk("@(%s:%s)\n", __FILE__, __FUNCTION__);
+	printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
 
 	struct pcnet32_private *lp = netdev_priv(dev);
 	unsigned long ioaddr = dev->base_addr;
@@ -368,7 +368,7 @@ static struct net_device_stats *pcnet32_get_stats(struct net_device *dev) {
  * Set or clear the multicast filter for this adaptor.
  */
 static void pcnet32_set_multicast_list(struct net_device *dev) {
-	printk("@(%s:%s)\n", __FILE__, __FUNCTION__);
+	printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
 
 	unsigned long ioaddr = dev->base_addr, flags;
 	struct pcnet32_private *lp = netdev_priv(dev);
@@ -400,7 +400,7 @@ static void pcnet32_set_multicast_list(struct net_device *dev) {
 }
 
 static int pcnet32_ioctl(struct net_device *dev, struct ifreq *rq, int cmd) {
-	printk("@(%s:%s)\n", __FILE__, __FUNCTION__);
+	printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
 
 	struct pcnet32_private *lp = netdev_priv(dev);
 	int rc;
@@ -420,7 +420,7 @@ static int pcnet32_ioctl(struct net_device *dev, struct ifreq *rq, int cmd) {
 
 #ifdef CONFIG_NET_POLL_CONTROLLER
 static void pcnet32_poll_controller(struct net_device *dev) {
-	printk("@(%s:%s)\n", __FILE__, __FUNCTION__);
+	printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
 
 	disable_irq(dev->irq);
 	pcnet32_interrupt(0, dev);

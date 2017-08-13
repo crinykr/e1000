@@ -6,3 +6,79 @@ module_param(copybreak, uint, 0644) : insmod 시 전달되는 파라메터 정�
 
 # 컴파일러 옵션
 __read_mostly : read_mostly section 에 위치 시켜서, cache hit에 기여하게 한다. 어떤 방법으로?
+
+##########
+# Kernel Menu Config
+##########
+make defconfig
+<M> Device Drivers/Network device support/Ethernet driver support/AMD devices/AMD PCnet32 PCI support
+<*> Device Drivers/Graphics support/Frame buffer Devices/VESA VGA graphics support
+
+##########
+# Function Call
+##########
+
+# 1 # insmod pcnet32.ko
+main : pcnet32_init_module
+stub-pci : pcnet32_probe_pci
+stub-pci-probe : pcnet32_probe1
+stub-pci-probe : pcnet32_alloc_ring
+stub-netdev : pcnet32_get_stats
+
+# 2 # ifconfig eth0 10.0.2.15 netmask 255.255.255.0 broadcast 10.0.2.255 up
+stub-netdev : pcnet32_open
+common : pcnet32_init_ring
+common : pcnet32_check_media
+stub-netdev : pcnet32_set_multicast_list
+common : pcnet32_suspend
+common : pcnet32_clr_suspend
+stub-pci-probe : pcnet32_poll
+stub-pci-probe : pcnet32_rx
+stub-netdev : pcnet32_get_stats
+stub-netdev : pcnet32_set_multicast_list
+common : pcnet32_suspend
+common : pcnet32_clr_suspend
+stub-netdev : pcnet32_set_mulicast_list
+common : pcnet32_suspend
+common : pcnet32_clr_suspend
+stub-netdev : pcnet32_set_multicast_list
+common : pcnet32_suspend
+common : pcnet32_clr_suspend
+stub-netdev : pcnet32_set_multicast_list
+common : pcnet32_suspend
+common : pcnet32_clr_suspend
+
+# 3 # route add default gw 10.0.2.2 dev eth0
+stub-netdev : pcnet32_start_xmit
+stub-pci-probe : pcnet32_poll
+stub-pci-probe : pcnet32_rx
+stub-pci-probe : pcnet32_tx
+
+# 4 # ping 8.8.8.8
+stub-netdev : pcnet32_start_xmit
+stub-pci-probe : pcnet32_poll
+stub-pci-probe : pcnet32_rx
+stub-pci-probe : pcnet32_tx
+stub-pci-probe : pcnet32_poll
+stub-pci-probe : pcnet32_rx
+stub-pci-probe : pcnet32_rx_entry
+stub-pci-probe : pcnet32_tx
+
+# 5 # ifconfig down
+stub-netdev : pcnet32_set_multicast_list
+common : pcnet32_suspend
+common : pcnet23_clr_suspend
+stub-pci-probe : pcnet23_tx
+stub-netdev : pcnet23_close
+common : pcnet32_purge_rx_ring
+common : pcnet32_purge_tx_ring
+stub-netdev : pcnet32_get_stats
+
+# 6 # rmmod pcnet32
+main : pcnet32_cleanup_module
+stub-pci : pcnet32_remove_one
+stub-netdev : pcnet32_get_stats
+common : pcnet32_free_ring
+
+
+

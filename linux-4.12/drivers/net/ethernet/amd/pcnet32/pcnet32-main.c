@@ -20,7 +20,7 @@ int pcnet32_debug;
 
 static int __init pcnet32_init_module(void)
 {
-	printk("@(%s:%s)\n", __FILE__, __FUNCTION__);
+	printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
 
 	pcnet32_debug = netif_msg_init(-1, PCNET32_MSG_DEFAULT); // debug level : -1
 	pci_register_driver(&pcnet32_driver);
@@ -30,7 +30,7 @@ static int __init pcnet32_init_module(void)
 
 static void __exit pcnet32_cleanup_module(void)
 {
-	printk("@(%s:%s)\n", __FILE__, __FUNCTION__);
+	printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
 
 	pci_unregister_driver(&pcnet32_driver);
 }

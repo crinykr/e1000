@@ -4,7 +4,7 @@
 int pcnet32_probe1(unsigned long, int, struct pci_dev *);
 
 int pcnet32_probe_pci(struct pci_dev *pdev, const struct pci_device_id *ent) {
-	printk("@(%s:%s)\n", __FILE__, __FUNCTION__);
+	printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
 
 	unsigned long ioaddr;
 
@@ -18,7 +18,7 @@ int pcnet32_probe_pci(struct pci_dev *pdev, const struct pci_device_id *ent) {
 }
 
 static void pcnet32_remove_one(struct pci_dev *pdev) {
-	printk("@(%s:%s)\n", __FILE__, __FUNCTION__);
+	printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
 
 	struct net_device *dev = pci_get_drvdata(pdev);
 
@@ -35,7 +35,7 @@ static void pcnet32_remove_one(struct pci_dev *pdev) {
 }
 
 static int pcnet32_pm_suspend(struct pci_dev *pdev, pm_message_t state) {
-	printk("@(%s:%s)\n", __FILE__, __FUNCTION__);
+	printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
 
 	struct net_device *dev = pci_get_drvdata(pdev);
 
@@ -49,7 +49,7 @@ static int pcnet32_pm_suspend(struct pci_dev *pdev, pm_message_t state) {
 }
 
 static int pcnet32_pm_resume(struct pci_dev *pdev) {
-	printk("@(%s:%s)\n", __FILE__, __FUNCTION__);
+	printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
 
 	struct net_device *dev = pci_get_drvdata(pdev);
 
