@@ -229,4 +229,6 @@ int pcnet32_suspend(struct net_device *dev, unsigned long *flags, int can_sleep)
 int pcnet32_open(struct net_device *);
 int pcnet32_close(struct net_device *);
 
+inline void prt_func_dbg(char *file, char *func);
+
 #endif /* AMD_PCNET32_H_ */

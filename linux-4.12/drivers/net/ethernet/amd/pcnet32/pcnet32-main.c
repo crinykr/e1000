@@ -20,7 +20,7 @@ int pcnet32_debug;
 
 static int __init pcnet32_init_module(void)
 {
-	printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
+	prt_func_dbg(__FILE__, __FUNCTION__);
 
 	pcnet32_debug = netif_msg_init(-1, PCNET32_MSG_DEFAULT); // debug level : -1
 	pci_register_driver(&pcnet32_driver);
@@ -30,7 +30,7 @@ static int __init pcnet32_init_module(void)
 
 static void __exit pcnet32_cleanup_module(void)
 {
-	printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
+	prt_func_dbg(__FILE__, __FUNCTION__);
 
 	pci_unregister_driver(&pcnet32_driver);
 }
@@ -41,3 +41,15 @@ module_exit( pcnet32_cleanup_module);
 MODULE_AUTHOR("Thomas Bogendoerfer");
 MODULE_DESCRIPTION("Driver for PCnet32 and PCnetPCI based ethercards");
 MODULE_LICENSE("GPL");
+
+/**********************
+ * Extra Function
+ **********************/
+
+static int debug = 0;
+module_param(debug, int, 0);
+
+inline void prt_func_dbg(char *file, char *func) {
+	if (debug)
+		printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, file, func);
+}

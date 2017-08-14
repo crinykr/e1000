@@ -20,7 +20,7 @@ static void pcnet32_watchdog(struct net_device *dev);
  *  Called from pcnet_probe_pci.
  */
 int pcnet32_probe1(unsigned long ioaddr, int shared, struct pci_dev *pdev) {
-	printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
+	prt_func_dbg(__FILE__, __FUNCTION__);
 
 	struct pcnet32_private *lp;
 	int i, media;
@@ -175,7 +175,7 @@ int pcnet32_probe1(unsigned long ioaddr, int shared, struct pci_dev *pdev) {
 }
 
 static int pcnet32_poll(struct napi_struct *napi, int budget) {
-	printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
+	prt_func_dbg(__FILE__, __FUNCTION__);
 
 	struct pcnet32_private
 	*lp = container_of(napi, struct pcnet32_private, napi);
@@ -211,7 +211,7 @@ static int pcnet32_poll(struct napi_struct *napi, int budget) {
 }
 
 static int pcnet32_rx(struct net_device *dev, int budget) {
-	printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
+	prt_func_dbg(__FILE__, __FUNCTION__);
 
 	struct pcnet32_private *lp = netdev_priv(dev);
 	int entry = lp->cur_rx & lp->rx_mod_mask;
@@ -237,7 +237,7 @@ static int pcnet32_rx(struct net_device *dev, int budget) {
 }
 
 static int pcnet32_tx(struct net_device *dev) {
-	printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
+	prt_func_dbg(__FILE__, __FUNCTION__);
 
 	struct pcnet32_private *lp = netdev_priv(dev);
 	unsigned int dirty_tx = lp->dirty_tx;
@@ -321,7 +321,7 @@ static int pcnet32_tx(struct net_device *dev) {
  */
 
 static void pcnet32_rx_entry(struct net_device *dev, struct pcnet32_private *lp, struct pcnet32_rx_head *rxp, int entry) {
-	printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
+	prt_func_dbg(__FILE__, __FUNCTION__);
 
 	int status = (short) le16_to_cpu(rxp->status) >> 8;
 	int rx_in_place = 0;
@@ -413,7 +413,7 @@ static void pcnet32_rx_entry(struct net_device *dev, struct pcnet32_private *lp,
 
 /* if any allocation fails, caller must also call pcnet32_free_ring */
 static int pcnet32_alloc_ring(struct net_device *dev, const char *name) {
-	printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
+	prt_func_dbg(__FILE__, __FUNCTION__);
 
 	struct pcnet32_private *lp = netdev_priv(dev);
 
@@ -454,7 +454,7 @@ static int pcnet32_alloc_ring(struct net_device *dev, const char *name) {
  */
 
 static void pcnet32_watchdog(struct net_device *dev) {
-	//printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
+	//prt_func_dbg(__FILE__, __FUNCTION__);
 
 	struct pcnet32_private *lp = netdev_priv(dev);
 	unsigned long flags;

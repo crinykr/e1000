@@ -11,7 +11,7 @@ static const char pcnet32_gstrings_test[][ETH_GSTRING_LEN] = {
 	"Loopback test  (offline)" };
 
 static void pcnet32_get_drvinfo(struct net_device *dev, struct ethtool_drvinfo *info) {
-	printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
+	prt_func_dbg(__FILE__, __FUNCTION__);
 
 	struct pcnet32_private *lp = netdev_priv(dev);
 
@@ -24,21 +24,21 @@ static void pcnet32_get_drvinfo(struct net_device *dev, struct ethtool_drvinfo *
 }
 
 static u32 pcnet32_get_msglevel(struct net_device *dev) {
-	printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
+	prt_func_dbg(__FILE__, __FUNCTION__);
 
 	struct pcnet32_private *lp = netdev_priv(dev);
 	return lp->msg_enable;
 }
 
 static void pcnet32_set_msglevel(struct net_device *dev, u32 value) {
-	printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
+	prt_func_dbg(__FILE__, __FUNCTION__);
 
 	struct pcnet32_private *lp = netdev_priv(dev);
 	lp->msg_enable = value;
 }
 
 static int pcnet32_nway_reset(struct net_device *dev) {
-	printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
+	prt_func_dbg(__FILE__, __FUNCTION__);
 
 	struct pcnet32_private *lp = netdev_priv(dev);
 	unsigned long flags;
@@ -53,7 +53,7 @@ static int pcnet32_nway_reset(struct net_device *dev) {
 }
 
 static u32 pcnet32_get_link(struct net_device *dev) {
-	printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
+	prt_func_dbg(__FILE__, __FUNCTION__);
 
 	struct pcnet32_private *lp = netdev_priv(dev);
 	unsigned long flags;
@@ -82,7 +82,7 @@ static u32 pcnet32_get_link(struct net_device *dev) {
 }
 
 static void pcnet32_get_ringparam(struct net_device *dev, struct ethtool_ringparam *ering) {
-	printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
+	prt_func_dbg(__FILE__, __FUNCTION__);
 
 	struct pcnet32_private *lp = netdev_priv(dev);
 
@@ -93,7 +93,7 @@ static void pcnet32_get_ringparam(struct net_device *dev, struct ethtool_ringpar
 }
 
 static int pcnet32_set_ringparam(struct net_device *dev, struct ethtool_ringparam *ering) {
-	printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
+	prt_func_dbg(__FILE__, __FUNCTION__);
 
 	struct pcnet32_private *lp = netdev_priv(dev);
 	unsigned long flags;
@@ -145,13 +145,13 @@ static int pcnet32_set_ringparam(struct net_device *dev, struct ethtool_ringpara
 }
 
 static void pcnet32_get_strings(struct net_device *dev, u32 stringset, u8 *data) {
-	printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
+	prt_func_dbg(__FILE__, __FUNCTION__);
 
 	memcpy(data, pcnet32_gstrings_test, sizeof(pcnet32_gstrings_test));
 }
 
 void pcnet32_ethtool_test(struct net_device *dev, struct ethtool_test *test, u64 * data) {
-	printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
+	prt_func_dbg(__FILE__, __FUNCTION__);
 
 	struct pcnet32_private *lp = netdev_priv(dev);
 	int rc;
@@ -168,7 +168,7 @@ void pcnet32_ethtool_test(struct net_device *dev, struct ethtool_test *test, u64
 } /* end pcnet32_ethtool_test */
 
 static int pcnet32_set_phys_id(struct net_device *dev, enum ethtool_phys_id_state state) {
-	printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
+	prt_func_dbg(__FILE__, __FUNCTION__);
 
 	struct pcnet32_private *lp = netdev_priv(dev);
 	const struct pcnet32_access *a = lp->a;
@@ -205,7 +205,7 @@ static int pcnet32_set_phys_id(struct net_device *dev, enum ethtool_phys_id_stat
 }
 
 static int pcnet32_get_regs_len(struct net_device *dev) {
-	printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
+	prt_func_dbg(__FILE__, __FUNCTION__);
 
 	struct pcnet32_private *lp = netdev_priv(dev);
 	int j = lp->phycount * PCNET32_REGS_PER_PHY;
@@ -214,7 +214,7 @@ static int pcnet32_get_regs_len(struct net_device *dev) {
 }
 
 static void pcnet32_get_regs(struct net_device *dev, struct ethtool_regs *regs, void *ptr) {
-	printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
+	prt_func_dbg(__FILE__, __FUNCTION__);
 
 	int i, csr0;
 	u16 *buff = ptr;
@@ -269,7 +269,7 @@ static void pcnet32_get_regs(struct net_device *dev, struct ethtool_regs *regs, 
 }
 
 static int pcnet32_get_sset_count(struct net_device *dev, int sset) {
-	printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
+	prt_func_dbg(__FILE__, __FUNCTION__);
 
 	switch (sset) {
 	case ETH_SS_TEST:
@@ -280,7 +280,7 @@ static int pcnet32_get_sset_count(struct net_device *dev, int sset) {
 }
 
 static int pcnet32_get_link_ksettings(struct net_device *dev, struct ethtool_link_ksettings *cmd) {
-	printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
+	prt_func_dbg(__FILE__, __FUNCTION__);
 
 	struct pcnet32_private *lp = netdev_priv(dev);
 	unsigned long flags;
@@ -312,7 +312,7 @@ static int pcnet32_get_link_ksettings(struct net_device *dev, struct ethtool_lin
 }
 
 static int pcnet32_set_link_ksettings(struct net_device *dev, const struct ethtool_link_ksettings *cmd) {
-	printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
+	prt_func_dbg(__FILE__, __FUNCTION__);
 
 	struct pcnet32_private *lp = netdev_priv(dev);
 	ulong ioaddr = dev->base_addr;
@@ -379,7 +379,7 @@ const struct ethtool_ops pcnet32_ethtool_ops = { //
  * Extra Function
  **********************/
 static int pcnet32_loopback_test(struct net_device *dev, uint64_t * data1) {
-	printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
+	prt_func_dbg(__FILE__, __FUNCTION__);
 
 	struct pcnet32_private *lp = netdev_priv(dev);
 	const struct pcnet32_access *a = lp->a; /* access to registers */
@@ -536,7 +536,7 @@ static int pcnet32_loopback_test(struct net_device *dev, uint64_t * data1) {
 } /* end pcnet32_loopback_test  */
 
 static void pcnet32_netif_stop(struct net_device *dev) {
-	printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
+	prt_func_dbg(__FILE__, __FUNCTION__);
 
 	struct pcnet32_private *lp = netdev_priv(dev);
 
@@ -546,7 +546,7 @@ static void pcnet32_netif_stop(struct net_device *dev) {
 }
 
 static void pcnet32_netif_start(struct net_device *dev) {
-	printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
+	prt_func_dbg(__FILE__, __FUNCTION__);
 
 	struct pcnet32_private *lp = netdev_priv(dev);
 	ulong ioaddr = dev->base_addr;
@@ -567,7 +567,7 @@ static void pcnet32_netif_start(struct net_device *dev) {
  * Must be called with lp->lock held.
  */
 void pcnet32_realloc_tx_ring(struct net_device *dev, struct pcnet32_private *lp, unsigned int size) {
-	printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
+	prt_func_dbg(__FILE__, __FUNCTION__);
 
 	dma_addr_t new_ring_dma_addr;
 	dma_addr_t *new_dma_addr_list;
@@ -617,7 +617,7 @@ void pcnet32_realloc_tx_ring(struct net_device *dev, struct pcnet32_private *lp,
  * Must be called with lp->lock held.
  */
 void pcnet32_realloc_rx_ring(struct net_device *dev, struct pcnet32_private *lp, unsigned int size) {
-	printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
+	prt_func_dbg(__FILE__, __FUNCTION__);
 
 	dma_addr_t new_ring_dma_addr;
 	dma_addr_t *new_dma_addr_list;

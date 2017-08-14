@@ -13,7 +13,7 @@ static int pcnet32_check_otherphy(struct net_device *dev);
  */
 
 void pcnet32_purge_rx_ring(struct net_device *dev) {
-	printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
+	prt_func_dbg(__FILE__, __FUNCTION__);
 
 	struct pcnet32_private *lp = netdev_priv(dev);
 	int i;
@@ -47,7 +47,7 @@ void pcnet32_purge_rx_ring(struct net_device *dev) {
  */
 
 void pcnet32_purge_tx_ring(struct net_device *dev) {
-	printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
+	prt_func_dbg(__FILE__, __FUNCTION__);
 
 	struct pcnet32_private *lp = netdev_priv(dev);
 	int i;
@@ -67,7 +67,7 @@ void pcnet32_purge_tx_ring(struct net_device *dev) {
 
 /* Initialize the PCNET32 Rx and Tx rings. */
 int pcnet32_init_ring(struct net_device *dev) {
-	printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
+	prt_func_dbg(__FILE__, __FUNCTION__);
 
 	struct pcnet32_private *lp = netdev_priv(dev);
 	int i;
@@ -123,7 +123,7 @@ int pcnet32_init_ring(struct net_device *dev) {
 }
 
 void pcnet32_free_ring(struct net_device *dev) {
-	printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
+	prt_func_dbg(__FILE__, __FUNCTION__);
 
 	struct pcnet32_private *lp = netdev_priv(dev);
 
@@ -159,7 +159,7 @@ void pcnet32_free_ring(struct net_device *dev) {
  */
 
 void pcnet32_check_media(struct net_device *dev, int verbose) {
-	//printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
+	//prt_func_dbg(__FILE__, __FUNCTION__);
 
 	struct pcnet32_private *lp = netdev_priv(dev);
 	int curr_link;
@@ -193,7 +193,7 @@ void pcnet32_check_media(struct net_device *dev, int verbose) {
 }
 
 static int pcnet32_check_otherphy(struct net_device *dev) {
-	printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
+	prt_func_dbg(__FILE__, __FUNCTION__);
 
 	struct pcnet32_private *lp = netdev_priv(dev);
 	struct mii_if_info mii = lp->mii_if;
@@ -231,7 +231,7 @@ static int pcnet32_check_otherphy(struct net_device *dev) {
  * and tell the chip to initialize.
  */
 void pcnet32_restart(struct net_device *dev, unsigned int csr0_bits) {
-	printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
+	prt_func_dbg(__FILE__, __FUNCTION__);
 
 	struct pcnet32_private *lp = netdev_priv(dev);
 	unsigned long ioaddr = dev->base_addr;
@@ -263,7 +263,7 @@ void pcnet32_restart(struct net_device *dev, unsigned int csr0_bits) {
  * lp->lock must be held.
  */
 int pcnet32_suspend(struct net_device *dev, unsigned long *flags, int can_sleep) {
-	printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
+	prt_func_dbg(__FILE__, __FUNCTION__);
 
 	int csr5;
 	struct pcnet32_private *lp = netdev_priv(dev);
@@ -298,7 +298,7 @@ int pcnet32_suspend(struct net_device *dev, unsigned long *flags, int can_sleep)
 }
 
 void pcnet32_clr_suspend(struct pcnet32_private *lp, ulong ioaddr) {
-	printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
+	prt_func_dbg(__FILE__, __FUNCTION__);
 
 	int csr5 = lp->a->read_csr(ioaddr, CSR5);
 	/* clear SUSPEND (SPND) - CSR5 bit 0 */
@@ -307,7 +307,7 @@ void pcnet32_clr_suspend(struct pcnet32_private *lp, ulong ioaddr) {
 
 /* This routine assumes that the lp->lock is held */
 int mdio_read(struct net_device *dev, int phy_id, int reg_num) {
-	printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
+	prt_func_dbg(__FILE__, __FUNCTION__);
 
 	struct pcnet32_private *lp = netdev_priv(dev);
 	unsigned long ioaddr = dev->base_addr;
@@ -324,7 +324,7 @@ int mdio_read(struct net_device *dev, int phy_id, int reg_num) {
 
 /* This routine assumes that the lp->lock is held */
 void mdio_write(struct net_device *dev, int phy_id, int reg_num, int val) {
-	printk("!!! [%s:%d] - (%s:%s)\n", current->comm, current->pid, __FILE__, __FUNCTION__);
+	prt_func_dbg(__FILE__, __FUNCTION__);
 
 	struct pcnet32_private *lp = netdev_priv(dev);
 	unsigned long ioaddr = dev->base_addr;
